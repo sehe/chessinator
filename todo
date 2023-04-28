@@ -1,0 +1,20 @@
+just start
+
+read moves
+write moves
+
+make sort of map in memory
+think of all possible moves
+
+set-depth 4 (for now)
+
+for every possible move:
+    think of all other possible moves
+    for every possible move:
+        think of all other possible moves
+        for every possible move:
+            .......
+
+think of what's the worst that can happen, give a worse-ness score to all of them
+
+pick the move with the lowest worse-ness score
