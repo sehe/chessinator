@@ -1,2 +1,2 @@
-g++ main.cpp -o main
-.\main
+g++ main.cpp -std=c++20 -o main
+.\main %*
