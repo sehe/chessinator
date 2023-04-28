@@ -1,2 +1,2 @@
 g++ main.cpp -std=c++20 -o main
-.\main %*
+echo e2e4 | .\main %*
