@@ -34,9 +34,12 @@ main(int argc, char *argv[]) {
     board board;
 
     // let's for now just assume I'm white (hmm, that sounds kinda racist)
-    while (true) {
-        string input_move;
+    for (string input_move; true;) {
         getline(cin, input_move);
+        if (input_move.length() != 4) {
+            cout << "Invalid move of size" << input_move.length() << endl;
+            exit(EXIT_FAILURE);
+        }
         cout << input_move << endl;
     }
 }
