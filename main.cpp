@@ -57,7 +57,13 @@ struct board {
         int black = 0;
         int white = 0;
 
+        cout << endl;
         for (int i = 0; i < 8; i++) {
+            piece(&row)[8] = pieces[i];
+            for (int k = 0; k < 8; ++k) {
+                cout << row[k].piece << " ";
+            }
+            cout << endl;
             for (int j = 0; j < 8; ++j) {
                 piece piece = pieces[i][j];
 
@@ -79,6 +85,8 @@ main(int argc, char *argv[]) {
     set<string_view> args{argv + 1, argv + argc};
     bool black = args.contains("--black");
     bool white = !black;
+    if (black)
+        cout << "I'm black" << endl;
 
     board board;
 
