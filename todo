@@ -4,7 +4,13 @@ read moves
 write moves
 
 make sort of map in memory
-think of all possible moves
+think of all possible moves:
+    castling
+    en-passant
+    promotion
+    pawn either move forward or *capture* sideways
+
+fenloader: properly set worth
 
 set-depth 4 (for now)
 
