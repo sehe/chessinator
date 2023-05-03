@@ -9,7 +9,7 @@ en-passant:
 ;  move(string)
 ;  possiblemoves
 
-castling:
+castling: - only when no field in between in attacked
    possiblemoves
    move(::move)
    move(string)
@@ -32,8 +32,22 @@ struct move {
 
 FIX move(string &move)
 
+
+eval:
+    make checkmate worth              a lot
+    make pat worth                    0
+    make three-fold repetition worth  0
+
+move(::move):
+    auto detect en passant ability
+    auto remove castling ability
+    auto remove en passant ability
+
 think of all possible moves:
     if in check, the only possible moves may be moving the king
+
+    check if move is actually legal:
+        check for if any (illegal) moves by the opponent are attacking the king if you would move your move
 
 
     castling
@@ -47,14 +61,15 @@ think of all possible moves:
 
         ; sideways:
         ;     just normally: left, right
-        ; en-passant
-        promotion (both forward and sideways)
+        ;     en-passant
+        ;     promotion (both forward and sideways)
     
     rook: (not allowed to go through stuff...)
         left
         right
         down
         up
+
     
     knight: (allowed to go through stuff)
         2 left 1 up
@@ -97,6 +112,7 @@ think of all possible moves:
         down
         up
 
+    castling!! (with check if no fields in between are attacked)
     
 
 fenloader: properly set worth
