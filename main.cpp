@@ -38,6 +38,13 @@ struct move {
 
     unsigned int torow : 3;
     unsigned int tocol : 3;
+
+    int enpassantrow : 4 = -1;
+    int enpassantcol : 4 = -1;
+
+    char promotion = ' ';
+
+    bool castling : 1 = false;
 };
 
 struct board {
@@ -116,6 +123,8 @@ struct board {
 
     bitset<4> castling{"1111"};
 
+    int enpassant[2]{-1, -1};
+
     int eval() {
         int black = 0;
         int white = 0;
@@ -138,12 +147,20 @@ struct board {
         pieces[move[3] - '1'][move[2] - 'a'] = pieces[move[1] - '1'][move[0] - 'a'];
         pieces[move[1] - '1'][move[0] - 'a'] = emptypiece;
 
+        whosetomove = !whosetomove;
+        enpassant[0] = -1;
+        enpassant[1] = -1;
+
         cout << "Moving from " << move[0] << move[1] << " to " << move[2] << move[3] << endl;
     }
 
     void move(::move &move) {
         pieces[move.torow][move.tocol] = *move.piece;
         // pieces[move.fromrow][move.fromcol] = emptypiece;
+
+        whosetomove = !whosetomove;
+        enpassant[0] = -1;
+        enpassant[1] = -1;
 
         cout << "Moving from " << move.fromrow << " " << move.fromcol << " to " << move.torow << " " << move.tocol
              << endl;
@@ -154,9 +171,11 @@ struct board {
         for (int i = 0; i < 9; i++) {
             cout << "\x1B[49m" << endl;
             if (i == 8) {
-                cout << "\x1B[49m  \uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17 ← col  " << endl;
+                // cout << "\x1B[49m  \uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17 ← col  " << endl;
+                cout << "\x1B[49m  \uFF41\uFF42\uFF43\uFF44\uFF45\uFF46\uFF47\uFF48 ← col  " << endl;
             } else {
-                string numbs[8] = {"\uFF10", "\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17"};
+                // string numbs[8] = {"\uFF10", "\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17"};
+                string numbs[8] = {"\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17", "\uFF18"};
                 cout << "\x1B[49m" << numbs[7 - i];
                 for (int k = 0; k < 8; ++k) {
                     piece &piece = pieces[7 - i][k];
@@ -167,10 +186,12 @@ struct board {
         }
     }
 
-    int calcworth(int row, int col) {
-        return 0;
-    }
+    // int calcworth(int row, int col) {
+    //     return 0;
+    // }
 
+    // warning: highly inefficient function, it was more or less only meant for testing, don't even try to read it,
+    // it'll definitely hurt your eyes
     string toFen() {
         char fen[90];
 
@@ -247,27 +268,120 @@ struct board {
 
                         // simply 1 forward
                         if (rownumb - 1 > -1 && pieces[rownumb - 1][colnumb].color[0] == 0) {
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + 1),
-                                             static_cast<unsigned int>(colnumb)});
+                            if (rownumb - 1 == 0) {
+                                // promotion
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb - 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'q', false});
+
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb - 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'n', false});
+
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb - 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'b', false});
+
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb - 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'r', false});
+                            } else {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb - 1), static_cast<unsigned int>(colnumb)});
+                            }
+
+                            // 2 forward, but only if on starting row & not going through another piece
+                            if (rownumb == 6 && rownumb - 2 > -1 && pieces[rownumb - 2][colnumb].color[0] == 0) {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb - 2), static_cast<unsigned int>(colnumb)});
+                            }
                         };
-                        // 2 forward, but only if on starting row
-                        if (rownumb == 6 && rownumb - 2 > -1 && pieces[rownumb - 2][colnumb].color[0] == 0) {
+
+                        // capturing, left or right
+                        if (rownumb - 1 > -1 && colnumb - 1 > -1 && pieces[rownumb - 1][colnumb - 1].color[0] == 1 &&
+                            pieces[rownumb - 1][colnumb - 1].color[1] != piece.color[1]) {
                             moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + 2),
-                                             static_cast<unsigned int>(colnumb)});
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb - 1),
+                                             static_cast<unsigned int>(colnumb - 1)});
+                        }
+                        if (rownumb - 1 > -1 && colnumb + 1 < 8 && pieces[rownumb - 1][colnumb + 1].color[0] == 1 &&
+                            pieces[rownumb - 1][colnumb + 1].color[1] != piece.color[1]) {
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb - 1),
+                                             static_cast<unsigned int>(colnumb + 1)});
+                        }
+
+                        // en passant
+                        if (rownumb == 3 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(2),
+                                             static_cast<unsigned int>(enpassant[0]), 3, enpassant[0]});
                         }
                     } else {
                         // white
+
+                        // moving, simply 1 forward
                         if (rownumb + 1 < 8 && pieces[rownumb + 1][colnumb].color[0] == 0) {
+                            if (rownumb + 1 == 7) {
+                                // promotion
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb + 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'q', false});
+
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb + 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'n', false});
+
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb + 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'b', false});
+
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb),
+                                                 static_cast<unsigned int>(rownumb + 1),
+                                                 static_cast<unsigned int>(colnumb), -1, -1, 'r', false});
+                            } else {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb + 1), static_cast<unsigned int>(colnumb)});
+                            }
+
+                            // 2 forward, but only if on starting row & not going through another piece
+                            if (rownumb == 1 && rownumb + 2 < 8 && pieces[rownumb + 2][colnumb].color[0] == 0) {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb + 2), static_cast<unsigned int>(colnumb)});
+                            }
+                        };
+
+                        // capturing, left or right
+                        if (rownumb + 1 < 8 && colnumb - 1 > -1 && pieces[rownumb + 1][colnumb - 1].color[0] == 1 &&
+                            pieces[rownumb + 1][colnumb - 1].color[1] != piece.color[1]) {
                             moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                              static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + 1),
-                                             static_cast<unsigned int>(colnumb)});
+                                             static_cast<unsigned int>(colnumb - 1)});
                         };
-                        if (rownumb == 1 && rownumb + 2 < 8 && pieces[rownumb + 2][colnumb].color[0] == 0) {
+                        if (rownumb + 1 < 8 && colnumb + 1 < 8 && pieces[rownumb + 1][colnumb + 1].color[0] == 1 &&
+                            pieces[rownumb + 1][colnumb + 1].color[1] != piece.color[1]) {
                             moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + 2),
-                                             static_cast<unsigned int>(colnumb)});
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + 1),
+                                             static_cast<unsigned int>(colnumb + 1)});
+                        };
+
+                        // en passant
+                        if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(5),
+                                             static_cast<unsigned int>(enpassant[0]), 4, enpassant[0]});
                         }
                     }
                     break;
@@ -372,6 +486,18 @@ struct board {
                     stage++;
                     continue;
                 }
+            } else if (stage == 3) {
+                if (c == '-') {
+                    continue;
+                } else if (c > '`' && c < '{') {
+                    enpassant[0] = c - 'a';
+                } else if (c > '/' && c < ':') {
+                    enpassant[1] = c - '1';
+                } else if (c == ' ') {
+                    stage++;
+                    // cout << enpassant[0] << enpassant[1] << endl;
+                    continue;
+                }
             }
         }
     }
@@ -399,18 +525,19 @@ int main(int argc, char *argv[]) {
         }
 
         // board.move(input_move);
-        // board.loadfen("r1b1kbnr/pp1qpppp/n1p5/3pP3/3P4/5N2/PPP2PPP/RNBQKB1R w KQkq - 3 5");
-        board.loadfen("r1bk1bnr/pp1q1Ppp/n1p1p3/3p4/3P4/5N2/PPP2PPP/RNBQKB1R w KQ - 0 7");
+
+        // example with possibilities for pawns to go sideways, forward, promote (also capturing promotion),
+        // castle (not the pawns) & en passant
+        board.loadfen("r1bk2nr/p2q1Ppp/2pbp3/Ppnp4/2PP4/3B1N2/1P3PPP/RNBQK2R w KQ b6 2 12");
+
         for (::move &move : board.possibleMoves()) {
-            // cout << move.piece->piece << "  r" << move.fromrow << "c" << move.fromcol << " ("
-            //      << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << ")"
-            //      << "  r" << move.torow << "c" << move.tocol << " (" << (char)(move.tocol + 'a')
-            //      << (char)(move.torow + '1') << ")" << endl;
             cout
                 << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) : (char)toupper(move.piece->piece)]
                 << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
-                << (char)(move.torow + '1') << "\x1B[2m\x1B[90m              " << move.fromrow << move.fromcol << " "
-                << move.torow << move.tocol << "\x1B[0m\x1B[49m" << endl;
+                << (char)(move.torow + '1') << "\x1B[0;32m"
+                << (move.promotion != ' ' ? move.promotion : (move.enpassantrow != -1 ? '*' : ' ')) << "\x1B[0m"
+                << "\x1B[2m\x1B[90m  \t     " << move.fromrow << move.fromcol << " " << move.torow << move.tocol
+                << "\x1B[0m\x1B[49m" << endl;
         };
         cout << endl;
 

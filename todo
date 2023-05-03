@@ -3,12 +3,101 @@ just start
 read moves
 write moves
 
-make sort of map in memory
+en-passant:
+;  load-fen
+;  move(::move)
+;  move(string)
+;  possiblemoves
+
+castling:
+   possiblemoves
+   move(::move)
+   move(string)
+
+struct move {
+    piece *piece;
+    unsigned int fromrow : 3;
+    unsigned int fromcol : 3;
+
+    unsigned int torow : 3;
+    unsigned int tocol : 3;
+
+    int enpassantrow : 4 = -1;
+    int enpassantcol : 4 = -1;
+
+    char promotion = ' ';
+
+    bool castling : 1 = false;
+};
+
+FIX move(string &move)
+
 think of all possible moves:
+    if in check, the only possible moves may be moving the king
+
+
     castling
     en-passant
     promotion
     pawn either move forward or *capture* sideways
+
+    pawn:
+        ; 1 forward
+        ; 2 forward (when on starting row)
+
+        ; sideways:
+        ;     just normally: left, right
+        ; en-passant
+        promotion (both forward and sideways)
+    
+    rook: (not allowed to go through stuff...)
+        left
+        right
+        down
+        up
+    
+    knight: (allowed to go through stuff)
+        2 left 1 up
+        2 left 1 down
+
+        2 right 1 up
+        2 right 1 down
+
+        2 up 1 left
+        2 up 1 right
+
+        2 down 1 left
+        2 down 1 right
+
+    bishop: (not allowed to go through stuff...)
+        sideways left up
+        sideways left down
+        sideways right up
+        sideways right down
+    
+    queen: (not allowed to go through stuff...)
+        sideways left up
+        sideways left down
+        sideways right up
+        sideways right down
+
+        left
+        right
+        down
+        up
+
+    king: (not allowed to go through stuff...)
+        sideways left up
+        sideways left down
+        sideways right up
+        sideways right down
+
+        left
+        right
+        down
+        up
+
+    
 
 fenloader: properly set worth
 
