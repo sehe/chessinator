@@ -1,3 +1,25 @@
+legality check:
+    pawn moves aren't checking
+    pawn captures are
+
+
+struct move {
+    piece *piece;
+    unsigned int fromrow : 3;
+    unsigned int fromcol : 3;
+
+    unsigned int torow : 3;
+    unsigned int tocol : 3;
+
+    int enpassantrow : 4 = -2;
+    int enpassantcol : 4 = -2;
+
+    char promotion = ' ';
+
+    bool castling : 1 = false;
+};
+
+
 just start
 
 read moves
@@ -10,25 +32,19 @@ en-passant:
 ;  possiblemoves
 
 castling: - only when no field in between in attacked
+
+        if (castling[0])
+            fen[state.fenpos++] = 'K';
+        if (castling[1])
+            fen[state.fenpos++] = 'Q';
+        if (castling[2])
+            fen[state.fenpos++] = 'k';
+        if (castling[3])
+            fen[state.fenpos++] = 'q';
+;
    possiblemoves
    move(::move)
    move(string)
-
-struct move {
-    piece *piece;
-    unsigned int fromrow : 3;
-    unsigned int fromcol : 3;
-
-    unsigned int torow : 3;
-    unsigned int tocol : 3;
-
-    int enpassantrow : 4 = -1;
-    int enpassantcol : 4 = -1;
-
-    char promotion = ' ';
-
-    bool castling : 1 = false;
-};
 
 FIX move(string &move)
 
@@ -36,7 +52,6 @@ FIX move(string &move)
 eval:
     make checkmate worth              a lot
     make pat worth                    0
-    make three-fold repetition worth  0
 
 move(::move):
     auto detect en passant ability
