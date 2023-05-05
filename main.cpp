@@ -48,6 +48,8 @@ struct move {
     bool castling : 1 = false;
 
     bool attacking : 1 = true;
+
+    int fap[2]{-2, -2};
 };
 
 struct board {
@@ -290,8 +292,8 @@ struct board {
 
         // whosetomove = !whosetomove;
 
-        cout << "Moving from " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→"
-             << (char)(move.tocol + 'a') << (char)(move.torow + '1') << endl;
+        // cout << "Moving from " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→"
+        //      << (char)(move.tocol + 'a') << (char)(move.torow + '1') << endl;
     }
 
     void printMove(::move &move) {
@@ -389,14 +391,21 @@ struct board {
         return fen;
     };
 
-    vector<::move> possibleMoves() {
+    vector<::move> possibleMoves(const vector<tuple<int, int>> &selectPieces = {{-2, -2}}, bool select = false) {
         vector<::move> movesm;
         vector<::move> moveso;
+        int kingrow = -2;
+        int kingcol = -2;
 
         // normal piece movement
         for (int rownumb = 0; rownumb < 8; ++rownumb) {
             piece(&row)[8] = pieces[rownumb];
             for (int colnumb = 0; colnumb < 8; ++colnumb) {
+                if (select && !(count_if(selectPieces.begin(), selectPieces.end(), [&](const tuple<int, int> &t) {
+                        return get<0>(t) == rownumb && get<1>(t) == colnumb;
+                    })))
+                    continue;
+
                 piece &piece = row[colnumb];
 
                 // cout << whosetomove << endl;
@@ -635,20 +644,39 @@ struct board {
                     }
                     break;
                 }
-                case 'k':
+                case 'k': {
+                    if (!imo) {
+                        kingrow = rownumb;
+                        kingcol = colnumb;
+                    }
+                }
                 case 'q':
                 case 'r': {
                     // left
                     for (int i = colnumb - 1; i > -1; i--) {
-                        if (pieces[rownumb][i].color[0] == 0b1 /* kenobi */ &&
-                            pieces[rownumb][i].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[rownumb][i].color == 0b00) {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(i)});
+                            } else {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(i), .fap = {rownumb, i}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[rownumb][i].color[0] == 0b1 /* kenobi */ &&
+                                pieces[rownumb][i].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb), static_cast<unsigned int>(i)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(i)});
 
-                        if (pieces[rownumb][i].color[0] == 0b1)
-                            break;
+                            if (pieces[rownumb][i].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -656,15 +684,29 @@ struct board {
 
                     // right
                     for (int i = colnumb + 1; i < 8; i++) {
-                        if (pieces[rownumb][i].color[0] == 0b1 /* kenobi */ &&
-                            pieces[rownumb][i].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[rownumb][i].color == 0b00) {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(i)});
+                            } else {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(i), .fap = {rownumb, i}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[rownumb][i].color[0] == 0b1 /* kenobi */ &&
+                                pieces[rownumb][i].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb), static_cast<unsigned int>(i)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(i)});
 
-                        if (pieces[rownumb][i].color[0] == 0b1)
-                            break;
+                            if (pieces[rownumb][i].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -672,15 +714,29 @@ struct board {
 
                     // up
                     for (int i = rownumb + 1; i < 8; i++) {
-                        if (pieces[i][colnumb].color[0] == 0b1 /* kenobi */ &&
-                            pieces[i][colnumb].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[i][colnumb].color == 0b00) {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
+                                                 static_cast<unsigned int>(colnumb)});
+                            } else {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
+                                                 static_cast<unsigned int>(colnumb), .fap = {i, colnumb}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[i][colnumb].color[0] == 0b1 /* kenobi */ &&
+                                pieces[i][colnumb].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(i), static_cast<unsigned int>(colnumb)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
+                                             static_cast<unsigned int>(colnumb)});
 
-                        if (pieces[i][colnumb].color[0] == 0b1)
-                            break;
+                            if (pieces[i][colnumb].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -688,15 +744,29 @@ struct board {
 
                     // down
                     for (int i = rownumb - 1; i > -1; i--) {
-                        if (pieces[i][colnumb].color[0] == 0b1 /* kenobi */ &&
-                            pieces[i][colnumb].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[i][colnumb].color == 0b00) {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
+                                                 static_cast<unsigned int>(colnumb)});
+                            } else {
+                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
+                                                 static_cast<unsigned int>(colnumb), .fap = {i, colnumb}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[i][colnumb].color[0] == 0b1 /* kenobi */ &&
+                                pieces[i][colnumb].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(i), static_cast<unsigned int>(colnumb)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
+                                             static_cast<unsigned int>(colnumb)});
 
-                        if (pieces[i][colnumb].color[0] == 0b1)
-                            break;
+                            if (pieces[i][colnumb].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -710,16 +780,30 @@ struct board {
                 case 'b': {
                     // left up
                     for (int i = 1; i <= min(7 - rownumb, colnumb); i++) {
-                        if (pieces[rownumb + i][colnumb - i].color[0] == 0b1 /* kenobi */ &&
-                            pieces[rownumb + i][colnumb - i].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[rownumb + i][colnumb - i].color == 0b00) {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb - i)});
+                            } else {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb - i),
+                                     .fap = {rownumb + i, colnumb - i}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[rownumb + i][colnumb - i].color[0] == 0b1 /* kenobi */ &&
+                                pieces[rownumb + i][colnumb - i].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb + i),
-                                         static_cast<unsigned int>(colnumb - i)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + i),
+                                             static_cast<unsigned int>(colnumb - i)});
 
-                        if (pieces[rownumb + i][colnumb - i].color[0] == 0b1)
-                            break;
+                            if (pieces[rownumb + i][colnumb - i].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -727,16 +811,30 @@ struct board {
 
                     // left down
                     for (int i = 1; i <= min(rownumb, colnumb); i++) {
-                        if (pieces[rownumb - i][colnumb - i].color[0] == 0b1 /* kenobi */ &&
-                            pieces[rownumb - i][colnumb - i].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[rownumb - i][colnumb - i].color == 0b00) {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb - i)});
+                            } else {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb - i),
+                                     .fap = {rownumb - i, colnumb - i}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[rownumb - i][colnumb - i].color[0] == 0b1 /* kenobi */ &&
+                                pieces[rownumb - i][colnumb - i].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb - i),
-                                         static_cast<unsigned int>(colnumb - i)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb - i),
+                                             static_cast<unsigned int>(colnumb - i)});
 
-                        if (pieces[rownumb - i][colnumb - i].color[0] == 0b1)
-                            break;
+                            if (pieces[rownumb - i][colnumb - i].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -744,16 +842,30 @@ struct board {
 
                     // right up
                     for (int i = 1; i <= min(7 - rownumb, 7 - colnumb); i++) {
-                        if (pieces[rownumb + i][colnumb + i].color[0] == 0b1 /* kenobi */ &&
-                            pieces[rownumb + i][colnumb + i].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[rownumb + i][colnumb + i].color == 0b00) {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb + i)});
+                            } else {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb + i),
+                                     .fap = {rownumb + i, colnumb + i}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[rownumb + i][colnumb + i].color[0] == 0b1 /* kenobi */ &&
+                                pieces[rownumb + i][colnumb + i].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb + i),
-                                         static_cast<unsigned int>(colnumb + i)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + i),
+                                             static_cast<unsigned int>(colnumb + i)});
 
-                        if (pieces[rownumb + i][colnumb + i].color[0] == 0b1)
-                            break;
+                            if (pieces[rownumb + i][colnumb + i].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -761,16 +873,30 @@ struct board {
 
                     // right down
                     for (int i = 1; i <= min(rownumb, 7 - colnumb); i++) {
-                        if (pieces[rownumb - i][colnumb + i].color[0] == 0b1 /* kenobi */ &&
-                            pieces[rownumb - i][colnumb + i].color[1] == piece.color[1])
-                            break;
+                        if (imo) {
+                            if (pieces[rownumb - i][colnumb + i].color == 0b00) {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb + i)});
+                            } else {
+                                moves.push_back(
+                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
+                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb + i),
+                                     .fap = {rownumb - i, colnumb + i}});
+                                break;
+                            }
+                        } else {
+                            if (pieces[rownumb - i][colnumb + i].color[0] == 0b1 /* kenobi */ &&
+                                pieces[rownumb - i][colnumb + i].color[1] == piece.color[1])
+                                break;
 
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb - i),
-                                         static_cast<unsigned int>(colnumb + i)});
+                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb - i),
+                                             static_cast<unsigned int>(colnumb + i)});
 
-                        if (pieces[rownumb - i][colnumb + i].color[0] == 0b1)
-                            break;
+                            if (pieces[rownumb - i][colnumb + i].color[0] == 0b1)
+                                break;
+                        }
 
                         if (piece.piece == 'k')
                             break;
@@ -784,7 +910,7 @@ struct board {
                     //   |
                     if (rownumb + 2 < 8 && colnumb - 1 > -1 &&
                         (pieces[rownumb + 2][colnumb - 1].color[0] == 0b0 ||
-                         pieces[rownumb + 2][colnumb - 1].color[1] != piece.color[1]))
+                         pieces[rownumb + 2][colnumb - 1].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb + 2),
                                          static_cast<unsigned int>(colnumb - 1)});
@@ -794,7 +920,7 @@ struct board {
                     // |
                     if (rownumb + 2 < 8 && colnumb + 1 < 8 &&
                         (pieces[rownumb + 2][colnumb + 1].color[0] == 0b0 ||
-                         pieces[rownumb + 2][colnumb + 1].color[1] != piece.color[1]))
+                         pieces[rownumb + 2][colnumb + 1].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb + 2),
                                          static_cast<unsigned int>(colnumb + 1)});
@@ -802,7 +928,7 @@ struct board {
                     // |__ (colnumb - 2, rownumb + 1)
                     if (colnumb - 2 > -1 && rownumb + 1 < 8 &&
                         (pieces[rownumb + 1][colnumb - 2].color[0] == 0b0 ||
-                         pieces[rownumb + 1][colnumb - 2].color[1] != piece.color[1]))
+                         pieces[rownumb + 1][colnumb - 2].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb + 1),
                                          static_cast<unsigned int>(colnumb - 2)});
@@ -811,7 +937,7 @@ struct board {
                     // |
                     if (colnumb - 2 > -1 && rownumb - 1 > -1 &&
                         (pieces[rownumb - 1][colnumb - 2].color[0] == 0b0 ||
-                         pieces[rownumb - 1][colnumb - 2].color[1] != piece.color[1]))
+                         pieces[rownumb - 1][colnumb - 2].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb - 1),
                                          static_cast<unsigned int>(colnumb - 2)});
@@ -820,7 +946,7 @@ struct board {
                     // |__ (colnumb + 1, rownumb - 2)
                     if (colnumb + 1 < 8 && rownumb - 2 > -1 &&
                         (pieces[rownumb - 2][colnumb + 1].color[0] == 0b0 ||
-                         pieces[rownumb - 2][colnumb + 1].color[1] != piece.color[1]))
+                         pieces[rownumb - 2][colnumb + 1].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb - 2),
                                          static_cast<unsigned int>(colnumb + 1)});
@@ -830,7 +956,7 @@ struct board {
                     //_  (colnumb - 1, rownumb - 2)
                     if (colnumb - 1 > -1 && rownumb - 2 > -1 &&
                         (pieces[rownumb - 2][colnumb - 1].color[0] == 0b0 ||
-                         pieces[rownumb - 2][colnumb - 1].color[1] != piece.color[1]))
+                         pieces[rownumb - 2][colnumb - 1].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb - 2),
                                          static_cast<unsigned int>(colnumb - 1)});
@@ -838,7 +964,7 @@ struct board {
                     // __| (colnumb + 2, rownumb + 1)
                     if (colnumb + 2 < 8 && rownumb + 1 < 8 &&
                         (pieces[rownumb + 1][colnumb + 2].color[0] == 0b0 ||
-                         pieces[rownumb + 1][colnumb + 2].color[1] != piece.color[1]))
+                         pieces[rownumb + 1][colnumb + 2].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb + 1),
                                          static_cast<unsigned int>(colnumb + 2)});
@@ -847,7 +973,7 @@ struct board {
                     //   | (colnumb + 2, rownumb - 1)
                     if (colnumb + 2 < 8 && rownumb - 1 > -1 &&
                         (pieces[rownumb - 1][colnumb + 2].color[0] == 0b0 ||
-                         pieces[rownumb - 1][colnumb + 2].color[1] != piece.color[1]))
+                         pieces[rownumb - 1][colnumb + 2].color[1] != piece.color[1] || imo))
                         moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
                                          static_cast<unsigned int>(rownumb - 1),
                                          static_cast<unsigned int>(colnumb + 2)});
@@ -856,9 +982,10 @@ struct board {
                 }
             }
         }
+        if (select)
+            return moveso;
 
         vector<::move> &moves = movesm;
-
         // castling
         if (whosetomove) {
             // black
@@ -979,14 +1106,63 @@ struct board {
         }
 
         // legality check
-        // auto it = remove_if(moves.begin(), moves.end(), [](const ::move &move) {
-        //     // if (move.attacking)
-        //     return false;
-        //     // else
-        //     // return true;
-        //     // return move.piece->piece == 'p';
-        // });
-        // moves.erase(it, moves.end());
+
+        bool kingIsInCheck = false;
+        if (kingcol != -2) {
+            for (::move &move : moveso) {
+                if (move.fap[0] == kingrow && move.fap[1] == kingcol) {
+                    kingIsInCheck = true;
+                    break;
+                }
+            }
+        }
+
+        auto it = remove_if(moves.begin(), moves.end(), [&](::move &move) {
+            if (kingIsInCheck) {
+                if (move.piece->piece == 'k') {
+                    bool isIllegal = false;
+                    for (::move &movea : moveso) {
+                        if (movea.torow == move.torow && movea.tocol == move.tocol) {
+                            isIllegal = true;
+                            break;
+                        }
+                    }
+
+                    return isIllegal;
+                } else {
+                    // make copy of board
+                    board boardc = *this;
+                    boardc.move(move);
+
+                    vector<tuple<int, int>> selectPieces;
+                    for (::move &movea : moveso) {
+                        if (movea.fap[0] == kingrow && movea.fap[1] == kingcol) {
+                            selectPieces.push_back({static_cast<int>(movea.fromrow), static_cast<int>(movea.fromcol)});
+                        }
+                    }
+
+                    // boardc.draw();
+                    // for (tuple<int, int> &selectPiece : selectPieces) {
+                    //     cout << boardc.pieces[get<0>(selectPiece)][get<1>(selectPiece)].piece << endl;
+                    // }
+
+                    vector<::move> possibleMoves = boardc.possibleMoves(selectPieces, true);
+                    // cout << possibleMoves.size() << endl;
+                    bool isIllegal = false;
+                    for (::move &move : possibleMoves) {
+                        if (move.fap[0] == kingrow && move.fap[1] == kingcol) {
+                            isIllegal = true;
+                            break;
+                        }
+                    };
+
+                    return isIllegal;
+                }
+            } else {
+                return false;
+            }
+        });
+        moves.erase(it, moves.end());
 
         return moves;
     }
@@ -1111,9 +1287,12 @@ int main(int argc, char *argv[]) {
         // field attacked preventing piece to move to it, and being in check, forced to resolve that issue first
         // board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2N1/n1PP4/3B2bR/1P3PPP/RNBQK3 w Q b6 4 13");
         // board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2N1/n1PP4/3B1b1R/1P3PPP/RNBQK3 w Q b6 4 13");
-        board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2Np/n1PP4/3B2bR/1P3P1P/RNBQK2R w QK b6 4 13");
+        // board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2Np/n1PP4/3B2bR/1P3P1P/RNBQK2R w QK b6 4 13");
 
-        board.move("e1h1");
+        // both legality check and definition of check check
+        board.loadfen("2R5/8/3k4/R4q2/8/B1K5/8/4R3 b - - 0 1");
+
+        // board.move("e1h1");
 
         // move move
         // board.loadfen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
@@ -1139,8 +1318,9 @@ int main(int argc, char *argv[]) {
 
         // board.move("a5b6");
 
-        for (::move &move : board.possibleMoves()) {
-            board.printMove(move);
+        vector<::move> possibleMoves = board.possibleMoves();
+        for (::move &move : possibleMoves) {
+            // board.printMove(move);
             cout
                 << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) : (char)toupper(move.piece->piece)]
                 << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
@@ -1151,15 +1331,19 @@ int main(int argc, char *argv[]) {
                                ? "*"
                                : (move.castling
                                       ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" + piecesmap['R'])
-                                      : " ")))
+                                      : "")))
+                << (move.fap[0] != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
+                << (move.attacking || move.fap[0] != -2
+                        ? piecesmap[move.piece->color[1] ? (char)tolower(board.pieces[move.torow][move.tocol].piece)
+                                                         : (char)toupper(board.pieces[move.torow][move.tocol].piece)]
+                        : "")
                 << "\x1B[0m"
                 << "\x1B[2m\x1B[90m  \t     " << move.fromrow << move.fromcol << " " << move.torow << move.tocol
                 << "\x1B[0m\x1B[49m" << endl;
         };
 
         // amout of possible moves
-        cout << board.possibleMoves().size() << endl;
-        cout << endl;
+        cout << possibleMoves.size() << endl << endl;
 
         // board.move(board.possibleMoves()[0]);
 

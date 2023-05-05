@@ -1,10 +1,53 @@
 todo:
- per piece evaluation
- move generation
  move legalization (check)
+
+ per piece evaluation
+ 
+ move generation
 
  position evaluation:
   check for checkmate and stalemate
+
+
+
+
+if imo:
+ ; p: attack even if empty or own
+
+ ; k/q/r/b: also attack own pieces, 
+ ;     store first attacked piece
+
+ ; n: also attack own pieces
+ ;    store first attacked piece 
+
+legality check:
+ if not in check: {
+ if king move:
+  is destination field attacked?
+  (by checking torow & tocol)
+ if other move:
+  do move on copy of board,
+  for every piece that has
+  stored it as "attacked piece":
+   check if it now attacks the 
+   king
+ }
+
+ ; if in check
+ ;  (if king field attacked): {
+ ; king move:
+ ;  destination field attacked?
+ ; other move:
+ ;  do move on copy of board,
+ ;  for every piece that has 
+ ;  stored king as attacked piece:
+ ;   check if it now attacks king
+ ; }
+
+
+
+
+
 
 struct move {
     piece *piece;
@@ -20,7 +63,12 @@ struct move {
     char promotion = ' ';
 
     bool castling : 1 = false;
+
+    bool attacking : 1 = true;
+
+    int fap[2]{-2, -2}; // row, colom
 };
+
 
 eval:
     make checkmate worth              a lot
