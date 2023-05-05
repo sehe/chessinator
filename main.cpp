@@ -20,7 +20,7 @@ using namespace std;
 struct piece {
     bitset<2> color;
     char piece;
-    int worth;
+    uint16_t worth;
 };
 piece emptypiece = {0b00, ' ', 0};
 
@@ -55,7 +55,7 @@ struct board {
         {{0b01, 'r', 500},
          {0b01, 'n', 300},
          {0b01, 'b', 300},
-         {0b01, 'k', 10000},
+         {0b01, 'k', 65535},
          {0b01, 'q', 900},
          {0b01, 'b', 300},
          {0b01, 'n', 300},
@@ -113,7 +113,7 @@ struct board {
         {{0b11, 'r', 500},
          {0b11, 'n', 300},
          {0b11, 'b', 300},
-         {0b11, 'k', 10000},
+         {0b11, 'k', 65535},
          {0b11, 'q', 900},
          {0b11, 'b', 300},
          {0b11, 'n', 300},
@@ -146,28 +146,168 @@ struct board {
         return white - black;
     }
 
-    void move(string &move) {
-        pieces[move[3] - '1'][move[2] - 'a'] = pieces[move[1] - '1'][move[0] - 'a'];
-        pieces[move[1] - '1'][move[0] - 'a'] = emptypiece;
+    void move(string const &move) {
+        ::move cmove;
 
-        whosetomove = !whosetomove;
-        enpassant[0] = -1;
-        enpassant[1] = -1;
+        if (pieces[move[1] - '1'][move[0] - 'a'].piece == 'k' &&
+            (move == "e1h1" || move == "e1a1" || move == "e8h8" || move == "e8a8")) {
+            // castling
+            cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
+                     static_cast<unsigned int>(move[1] - '1'),
+                     static_cast<unsigned int>(move[0] - 'a'),
+                     static_cast<unsigned int>(move[3] - '1'),
+                     static_cast<unsigned int>(move[2] - 'a'),
+                     -2,
+                     -2,
+                     ' ',
+                     true};
+        } else if (pieces[move[1] - '1'][move[0] - 'a'].piece == 'p' && move[0] != move[2] &&
+                   pieces[move[3] - '1'][move[2] - 'a'].piece == ' ') { // (if capturing empty piece)
+            // enpassant
+            cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
+                     static_cast<unsigned int>(move[1] - '1'),
+                     static_cast<unsigned int>(move[0] - 'a'),
+                     static_cast<unsigned int>(move[3] - '1'),
+                     static_cast<unsigned int>(move[2] - 'a'),
+                     move[3] - '1',
+                     move[2] - 'a',
+                     ' ',
+                     false};
+        } else if (move.length() == 5) {
+            // promotion
+            cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
+                     static_cast<unsigned int>(move[1] - '1'),
+                     static_cast<unsigned int>(move[0] - 'a'),
+                     static_cast<unsigned int>(move[3] - '1'),
+                     static_cast<unsigned int>(move[2] - 'a'),
+                     -2,
+                     -2,
+                     move[4],
+                     false};
+        } else {
+            // if not any of the weird cases, just move the piece
+            cmove = {&pieces[move[1] - '1'][move[0] - 'a'], static_cast<unsigned int>(move[1] - '1'),
+                     static_cast<unsigned int>(move[0] - 'a'), static_cast<unsigned int>(move[3] - '1'),
+                     static_cast<unsigned int>(move[2] - 'a')};
+        }
 
-        cout << "Moving from " << move[0] << move[1] << " to " << move[2] << move[3] << endl;
+        this->move(cmove);
     }
 
     void move(::move &move) {
-        pieces[move.torow][move.tocol] = *move.piece;
-        // pieces[move.fromrow][move.fromcol] = emptypiece;
+        // auto revoke enpassantability
+        enpassant[0] = -2;
+        enpassant[1] = -2;
 
-        whosetomove = !whosetomove;
-        enpassant[0] = -1;
-        enpassant[1] = -1;
+        // auto grant enpassantability
+        if (move.piece->piece == 'p') {
+            if (move.fromrow == 1 && move.torow == 3) {
+                enpassant[0] = move.fromcol;
+                enpassant[1] = move.fromrow + 1;
+            } else if (move.fromrow == 6 && move.torow == 4) {
+                enpassant[0] = move.fromcol;
+                enpassant[1] = move.fromrow - 1;
+            }
+        }
 
-        cout << "Moving from " << move.fromrow << " " << move.fromcol << " to " << move.torow << " " << move.tocol
-             << endl;
+        // auto revoke castling rights
+        if (move.piece->piece == 'k') {
+            if (move.piece->color[1] == 0) {
+                castling[0] = 0;
+                castling[1] = 0;
+            } else {
+                castling[2] = 0;
+                castling[3] = 0;
+            }
+        } else if (move.piece->piece == 'r') {
+            if (move.piece->color[1] == 0) {
+                if (move.fromrow == 0 && move.fromcol == 0) {
+                    // left white rook
+                    castling[1] = 0;
+                } else if (move.fromrow == 0 && move.fromcol == 7) {
+                    // right white rook
+                    castling[0] = 0;
+                }
+            } else {
+                if (move.fromrow == 7 && move.fromcol == 0) {
+                    // left black rook
+                    castling[3] = 0;
+                } else if (move.fromrow == 7 && move.fromcol == 7) {
+                    // right black rook
+                    castling[2] = 0;
+                }
+            }
+        }
+
+        if (move.castling) {
+            // castling
+            if (move.tocol == 7) {
+                // kingside
+
+                // move king
+                pieces[move.torow][6] = *move.piece;
+                pieces[move.fromrow][move.fromcol] = emptypiece;
+
+                // move rook
+                pieces[move.torow][5] = pieces[move.torow][7];
+                pieces[move.torow][move.tocol] = emptypiece;
+            } else if (move.tocol == 0) {
+                // queenside
+
+                // move king
+                pieces[move.torow][2] = *move.piece;
+                pieces[move.fromrow][move.fromcol] = emptypiece;
+
+                // move rook
+                pieces[move.torow][3] = pieces[move.torow][0];
+                pieces[move.torow][move.tocol] = emptypiece;
+            }
+        } else if (move.enpassantcol != -2) {
+            // enpassant
+
+            // move pawn
+            pieces[move.torow][move.tocol] = *move.piece;
+            pieces[move.fromrow][move.fromcol] = emptypiece;
+
+            // remove captured pawn
+            pieces[move.enpassantrow == 5 ? 4 : 3][move.enpassantcol] = emptypiece;
+        } else if (move.promotion != ' ') {
+            // promotion
+
+            // move pawn
+            pieces[move.torow][move.tocol] = *move.piece;
+            pieces[move.fromrow][move.fromcol] = emptypiece;
+
+            // change piece.piece to requested promotion piece
+            pieces[move.torow][move.tocol].piece = move.promotion;
+        }
+
+        else {
+            // if not any of the weird cases, just move the piece
+            pieces[move.torow][move.tocol] = *move.piece;
+            pieces[move.fromrow][move.fromcol] = emptypiece;
+        }
+
+        // whosetomove = !whosetomove;
+
+        cout << "Moving from " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→"
+             << (char)(move.tocol + 'a') << (char)(move.torow + '1') << endl;
     }
+
+    void printMove(::move &move) {
+        cout << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << (char)(move.tocol + 'a')
+             << (char)(move.torow + '1');
+
+        if (move.promotion != ' ') {
+            cout << (char)toupper(move.promotion);
+        }
+
+        cout << endl;
+    }
+
+    void toggleWhoseToMove() {
+        whosetomove = !whosetomove;
+    };
 
     void draw() {
         cout << "row\r\n↓";
@@ -839,16 +979,16 @@ struct board {
         }
 
         // legality check
-        auto it = remove_if(moves.begin(), moves.end(), [](const ::move &move) {
-            // if (move.attacking)
-            return false;
-            // else
-            // return true;
-            // return move.piece->piece == 'p';
-        });
-        moves.erase(it, moves.end());
+        // auto it = remove_if(moves.begin(), moves.end(), [](const ::move &move) {
+        //     // if (move.attacking)
+        //     return false;
+        //     // else
+        //     // return true;
+        //     // return move.piece->piece == 'p';
+        // });
+        // moves.erase(it, moves.end());
 
-        return moveso;
+        return moves;
     }
 
     void loadfen(string fen) {
@@ -957,7 +1097,7 @@ int main(int argc, char *argv[]) {
     for (string input_move; true;) {
         getline(cin, input_move);
         // input_move = "e2e4";
-        if (input_move.length() != 4) {
+        if (input_move.length() != 4 && input_move.length() != 5) {
             exit(EXIT_FAILURE);
             // continue;
         }
@@ -972,6 +1112,12 @@ int main(int argc, char *argv[]) {
         // board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2N1/n1PP4/3B2bR/1P3PPP/RNBQK3 w Q b6 4 13");
         // board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2N1/n1PP4/3B1b1R/1P3PPP/RNBQK3 w Q b6 4 13");
         board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2Np/n1PP4/3B2bR/1P3P1P/RNBQK2R w QK b6 4 13");
+
+        board.move("e1h1");
+
+        // move move
+        // board.loadfen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+        // board.loadfen("r3k2r/pppppppp/8/P7/8/8/1PPPPPPP/R3K2R b KQkq - 0 1");
 
         // castling legality check
         // board.loadfen("8/3k4/8/5q2/1B6/7B/8/1R2K2R w K - 0 1");
@@ -988,13 +1134,25 @@ int main(int argc, char *argv[]) {
         // relatively complicated legality check
         // board.loadfen("k7/8/8/2rr1n2/4b3/4p3/3K4/2r5 w - - 2 2");
         // board.loadfen("8/4k3/8/2q5/1B6/4B3/5K2/1R6 w - - 0 1");
+        // board.move(input_move);
+        // board.toggleWhoseToMove();
+
+        // board.move("a5b6");
 
         for (::move &move : board.possibleMoves()) {
+            board.printMove(move);
             cout
                 << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) : (char)toupper(move.piece->piece)]
                 << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
                 << (char)(move.torow + '1') << "\x1B[0;32m"
-                << (move.promotion != ' ' ? move.promotion : (move.enpassantrow != -2 ? '*' : ' ')) << "\x1B[0m"
+                << (string(1, move.promotion) != " "
+                        ? string(1, move.promotion)
+                        : (move.enpassantrow != -2
+                               ? "*"
+                               : (move.castling
+                                      ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" + piecesmap['R'])
+                                      : " ")))
+                << "\x1B[0m"
                 << "\x1B[2m\x1B[90m  \t     " << move.fromrow << move.fromcol << " " << move.torow << move.tocol
                 << "\x1B[0m\x1B[49m" << endl;
         };

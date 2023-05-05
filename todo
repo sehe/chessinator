@@ -1,7 +1,10 @@
-legality check:
-    pawn moves aren't checking
-    pawn captures are
+todo:
+ per piece evaluation
+ move generation
+ move legalization (check)
 
+ position evaluation:
+  check for checkmate and stalemate
 
 struct move {
     piece *piece;
@@ -19,120 +22,27 @@ struct move {
     bool castling : 1 = false;
 };
 
-
-just start
-
-read moves
-write moves
-
-en-passant:
-;  load-fen
-;  move(::move)
-;  move(string)
-;  possiblemoves
-
-castling: - only when no field in between in attacked
-
-        if (castling[0])
-            fen[state.fenpos++] = 'K';
-        if (castling[1])
-            fen[state.fenpos++] = 'Q';
-        if (castling[2])
-            fen[state.fenpos++] = 'k';
-        if (castling[3])
-            fen[state.fenpos++] = 'q';
-;
-   possiblemoves
-   move(::move)
-   move(string)
-
-FIX move(string &move)
-
-
 eval:
     make checkmate worth              a lot
-    make pat worth                    0
+    make stalemate worth              0
 
 move(::move):
-    auto detect en passant ability
-    auto remove castling ability
-    auto remove en passant ability
+    ; auto detect en passant ability
+    ; auto remove castling ability
+    ; auto remove en passant ability
+
+    ; normal move
+    ; castling
+    ; en passant
+    ; promotion
 
 think of all possible moves:
-    if in check, the only possible moves may be moving the king
+    if in check, the only possible moves may be moving the king, or fixing the check
 
     check if move is actually legal:
-        check for if any (illegal) moves by the opponent are attacking the king if you would move your move
-
-
-    castling
-    en-passant
-    promotion
-    pawn either move forward or *capture* sideways
-
-    pawn:
-        ; 1 forward
-        ; 2 forward (when on starting row)
-
-        ; sideways:
-        ;     just normally: left, right
-        ;     en-passant
-        ;     promotion (both forward and sideways)
-    
-    rook: (not allowed to go through stuff...)
-        left
-        right
-        down
-        up
-
-    
-    knight: (allowed to go through stuff)
-        2 left 1 up
-        2 left 1 down
-
-        2 right 1 up
-        2 right 1 down
-
-        2 up 1 left
-        2 up 1 right
-
-        2 down 1 left
-        2 down 1 right
-
-    bishop: (not allowed to go through stuff...)
-        sideways left up
-        sideways left down
-        sideways right up
-        sideways right down
-    
-    queen: (not allowed to go through stuff...)
-        sideways left up
-        sideways left down
-        sideways right up
-        sideways right down
-
-        left
-        right
-        down
-        up
-
-    king: (not allowed to go through stuff...)
-        sideways left up
-        sideways left down
-        sideways right up
-        sideways right down
-
-        left
-        right
-        down
-        up
-
-    castling!! (with check if no fields in between are attacked)
-    
+        check for if any (illegal) moves by the opponent are attacking the king if you would move your move    
 
 fenloader: properly set worth
-
-set-depth 4 (for now)
 
 for every possible move:
     think of all other possible moves
