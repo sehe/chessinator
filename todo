@@ -1,94 +1,10 @@
 todo:
- move legalization (check)
+ test ability enpassant & castling (only testing)
 
- per piece evaluation
- 
- move generation
-
- position evaluation:
-  check for checkmate and stalemate
-
-
-
-
-if imo:
- ; p: attack even if empty or own
-
- ; k/q/r/b: also attack own pieces, 
- ;     store first attacked piece
-
- ; n: also attack own pieces
- ;    store first attacked piece 
-
-legality check:
- if not in check: {
- if king move:
-  is destination field attacked?
-  (by checking torow & tocol)
- if other move:
-  do move on copy of board,
-  for every piece that has
-  stored it as "attacked piece":
-   check if it now attacks the 
-   king
- }
-
- ; if in check
- ;  (if king field attacked): {
- ; king move:
- ;  destination field attacked?
- ; other move:
- ;  do move on copy of board,
- ;  for every piece that has 
- ;  stored king as attacked piece:
- ;   check if it now attacks king
- ; }
-
-
-
-
-
-
-struct move {
-    piece *piece;
-    unsigned int fromrow : 3;
-    unsigned int fromcol : 3;
-
-    unsigned int torow : 3;
-    unsigned int tocol : 3;
-
-    int enpassantrow : 4 = -2;
-    int enpassantcol : 4 = -2;
-
-    char promotion = ' ';
-
-    bool castling : 1 = false;
-
-    bool attacking : 1 = true;
-
-    int fap[2]{-2, -2}; // row, colom
-};
-
-
-eval:
-    make checkmate worth              a lot
-    make stalemate worth              0
-
-move(::move):
-    ; auto detect en passant ability
-    ; auto remove castling ability
-    ; auto remove en passant ability
-
-    ; normal move
-    ; castling
-    ; en passant
-    ; promotion
-
-think of all possible moves:
-    if in check, the only possible moves may be moving the king, or fixing the check
-
-    check if move is actually legal:
-        check for if any (illegal) moves by the opponent are attacking the king if you would move your move    
+ evaluation:
+  per piece evaluation (maybe inside the possibleMoves? (reduces required calculations))
+  position evaluation:
+   check for checkmate (worth a lot) and stalemate (0)
 
 fenloader: properly set worth
 
