@@ -2,9 +2,8 @@ todo:
  test ability enpassant & castling (only testing)
 
  evaluation:
-  per piece evaluation (maybe inside the possibleMoves? (reduces required calculations))
-  position evaluation:
-   check for checkmate (worth a lot) and stalemate (0)
+  ; per piece evaluation (maybe inside the possibleMoves? (reduces required calculations))
+  smarter, instead of static values
 
 fenloader: properly set worth
 
@@ -18,3 +17,13 @@ for every possible move:
 think of what's the worst that can happen, give a worse-ness score to all of them
 
 pick the move with the lowest worse-ness score
+
+
+
+list of moves
+think of opponent responses, choose the best for the opponent of them
+    for every of opponent responses, choose best response for me
+
+
+
+list of moves

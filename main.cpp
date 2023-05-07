@@ -1,12 +1,14 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <chrono>
 #include <cstdio>
 #include <iostream>
 #include <iterator>
 #include <map>
 #include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
 #ifdef _WIN32
@@ -20,7 +22,7 @@ using namespace std;
 struct piece {
     bitset<2> color;
     char piece;
-    uint16_t worth;
+    int worth;
 };
 piece emptypiece = {0b00, ' ', 0};
 
@@ -50,6 +52,8 @@ struct move {
     bool attacking : 1 = true;
 
     int fap[2]{-2, -2};
+
+    int eval = 0;
 };
 
 struct board {
@@ -57,7 +61,7 @@ struct board {
         {{0b01, 'r', 500},
          {0b01, 'n', 300},
          {0b01, 'b', 300},
-         {0b01, 'k', 65535},
+         {0b01, 'k', 100000},
          {0b01, 'q', 900},
          {0b01, 'b', 300},
          {0b01, 'n', 300},
@@ -115,7 +119,7 @@ struct board {
         {{0b11, 'r', 500},
          {0b11, 'n', 300},
          {0b11, 'b', 300},
-         {0b11, 'k', 65535},
+         {0b11, 'k', 100000},
          {0b11, 'q', 900},
          {0b11, 'b', 300},
          {0b11, 'n', 300},
@@ -129,24 +133,6 @@ struct board {
     bitset<4> castling{"1111"};
 
     int enpassant[2]{-2, -2};
-
-    int eval() {
-        int black = 0;
-        int white = 0;
-
-        for (piece(&row)[8] : pieces) {
-            for (piece &piece : row) {
-                if (piece.color[0] == 0)
-                    continue;
-                if (piece.color[1] == 0)
-                    white += piece.worth;
-                else if (piece.color[1] == 1)
-                    black += piece.worth;
-            }
-        }
-        cout << "White: " << white << " Black: " << black << endl;
-        return white - black;
-    }
 
     void move(string const &move) {
         ::move cmove;
@@ -196,7 +182,7 @@ struct board {
         this->move(cmove);
     }
 
-    void move(::move &move) {
+    void move(::move const &move) {
         // auto revoke enpassantability
         enpassant[0] = -2;
         enpassant[1] = -2;
@@ -296,13 +282,16 @@ struct board {
         //      << (char)(move.tocol + 'a') << (char)(move.torow + '1') << endl;
     }
 
-    void printMove(::move &move) {
+    void actuallyMove(::move const &move) {
         cout << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << (char)(move.tocol + 'a')
              << (char)(move.torow + '1');
 
         if (move.promotion != ' ') {
             cout << (char)toupper(move.promotion);
         }
+
+        this->move(move);
+        toggleWhoseToMove();
 
         cout << endl;
     }
@@ -312,19 +301,19 @@ struct board {
     };
 
     void draw() {
-        cout << "row\r\n↓";
+        cerr << "row\r\n↓";
         for (int i = 0; i < 9; i++) {
-            cout << "\x1B[49m" << endl;
+            cerr << "\x1B[49m" << endl;
             if (i == 8) {
-                // cout << "\x1B[49m  \uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17 ← col  " << endl;
-                cout << "\x1B[49m  \uFF41\uFF42\uFF43\uFF44\uFF45\uFF46\uFF47\uFF48 ← col  " << endl;
+                // cerr << "\x1B[49m  \uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17 ← col  " << endl;
+                cerr << "\x1B[49m  \uFF41\uFF42\uFF43\uFF44\uFF45\uFF46\uFF47\uFF48 ← col  " << endl;
             } else {
                 // string numbs[8] = {"\uFF10", "\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17"};
                 string numbs[8] = {"\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17", "\uFF18"};
-                cout << "\x1B[49m" << numbs[7 - i];
+                cerr << "\x1B[49m" << numbs[7 - i];
                 for (int k = 0; k < 8; ++k) {
                     piece &piece = pieces[7 - i][k];
-                    cout << ((i % 2 ? !(k % 2) : (k % 2)) ? "\x1B[40m" : "\x1B[100m")                      // color
+                    cerr << ((i % 2 ? !(k % 2) : (k % 2)) ? "\x1B[40m" : "\x1B[100m")                      // color
                          << piecesmap[(char)(piece.color[1] ? piece.piece : toupper(piece.piece))] << " "; // piece
                 }
             }
@@ -1134,7 +1123,7 @@ struct board {
                 }
             }
         } else {
-            cout << "king not found!" << endl;
+            // cerr << "king not found!" << endl;
         }
 
         auto it = remove_if(moves.begin(), moves.end(), [&](::move &move) {
@@ -1189,12 +1178,12 @@ struct board {
                             fappers.push_back({static_cast<int>(movea.fromrow), static_cast<int>(movea.fromcol)});
                         }
                     }
-                    cout << fappers.size() << endl;
+                    // cout << fappers.size() << endl;
 
                     vector<::move> possibleMoves = boardc.possibleMoves(fappers, true);
 
                     bool isIllegal = false;
-                    cout << possibleMoves.size() << endl << endl;
+                    // cout << possibleMoves.size() << endl << endl;
                     for (::move &move : possibleMoves) {
                         if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
                             isIllegal = true;
@@ -1208,7 +1197,123 @@ struct board {
         });
         moves.erase(it, moves.end());
 
+        for (::move &move : moves) {
+            board boardc = *this;
+            boardc.move(move);
+
+            // int eval = 0;
+
+            // for every piece on the board
+            for (::piece(&row)[8] : boardc.pieces) {
+                for (::piece &piece : row) {
+                    if (piece.color[1] == 0b1) {
+                        // black
+                        if (piece.piece == 'p') {
+                            move.eval += -100;
+                        }
+                        if (piece.piece == 'n') {
+                            move.eval += -305;
+                        }
+                        if (piece.piece == 'b') {
+                            move.eval += -333;
+                        }
+                        if (piece.piece == 'r') {
+                            move.eval += -563;
+                        }
+                        if (piece.piece == 'q') {
+                            move.eval += -950;
+                        }
+                        if (piece.piece == 'k') {
+                            move.eval += -100000;
+                        }
+                    } else {
+                        // white
+                        if (piece.piece == 'p') {
+                            move.eval += 100;
+                        }
+                        if (piece.piece == 'n') {
+                            move.eval += 305;
+                        }
+                        if (piece.piece == 'b') {
+                            move.eval += 333;
+                        }
+                        if (piece.piece == 'r') {
+                            move.eval += 563;
+                        }
+                        if (piece.piece == 'q') {
+                            move.eval += 950;
+                        }
+                        if (piece.piece == 'k') {
+                            move.eval += 100000;
+                        }
+                    }
+                }
+            }
+
+            if (whoami)
+                move.eval = -1 * move.eval;
+
+            // move.eval = eval;
+        }
+
+        // if (size(moves) == 0)
+        // throw runtime_error("no moves");
+
         return moves;
+    }
+
+    int simpleEval() {
+        int eval = 0;
+        for (::piece(&row)[8] : pieces) {
+            for (::piece &piece : row) {
+                if (piece.color[1] == 0b1) {
+                    // black
+                    if (piece.piece == 'p') {
+                        eval += -100;
+                    }
+                    if (piece.piece == 'n') {
+                        eval += -305;
+                    }
+                    if (piece.piece == 'b') {
+                        eval += -333;
+                    }
+                    if (piece.piece == 'r') {
+                        eval += -563;
+                    }
+                    if (piece.piece == 'q') {
+                        eval += -950;
+                    }
+                    if (piece.piece == 'k') {
+                        eval += -100000;
+                    }
+                } else {
+                    // white
+                    if (piece.piece == 'p') {
+                        eval += 100;
+                    }
+                    if (piece.piece == 'n') {
+                        eval += 305;
+                    }
+                    if (piece.piece == 'b') {
+                        eval += 333;
+                    }
+                    if (piece.piece == 'r') {
+                        eval += 563;
+                    }
+                    if (piece.piece == 'q') {
+                        eval += 950;
+                    }
+                    if (piece.piece == 'k') {
+                        eval += 100000;
+                    }
+                }
+            }
+        }
+
+        if (whoami)
+            eval = -1 * eval;
+
+        return eval;
     }
 
     void loadfen(string fen) {
@@ -1299,6 +1404,166 @@ struct board {
             }
         }
     }
+
+    // ::move findMove() {
+    //     int counter = 0;
+
+    //     vector<::move> moves = possibleMoves();
+
+    //     for (::move &move : moves) {
+    //         move.eval = findMoveDepth(3, move, counter).eval;
+    //     }
+
+    //     cout << "evaluated " << counter << " positions" << endl;
+
+    //     sort(moves.begin(), moves.end(), [](const ::move &a, const ::move &b) { return a.eval > b.eval; });
+
+    //     for (::move &move : moves) {
+    //         // board.printMove(move);
+    //         cerr
+    //             << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) :
+    //             (char)toupper(move.piece->piece)]
+    //             << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
+    //             << (char)(move.torow + '1') << "\x1B[0;32m"
+    //             << (string(1, move.promotion) != " "
+    //                     ? string(1, move.promotion)
+    //                     : (move.enpassantrow != -2
+    //                            ? "*"
+    //                            : (move.castling
+    //                                   ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" +
+    //                                   piecesmap['R']) : "")))
+    //             << (move.fap[0] != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
+    //             << (move.attacking || move.fap[0] != -2
+    //                     ? piecesmap[move.piece->color[1] ? (char)tolower(pieces[move.torow][move.tocol].piece)
+    //                                                      : (char)toupper(pieces[move.torow][move.tocol].piece)]
+    //                     : "")
+    //             << "\x1B[0m"
+    //             << "\x1B[2m\x1B[90m  \t   " /* << move.fromrow << move.fromcol << " " << move.torow << move.tocol */
+    //             << move.eval << "\x1B[0m\x1B[49m" << endl;
+    //     };
+
+    //     return moves[0];
+    // }
+
+    // ::move findMoveDepth(int depth, ::move const &move, int &counter) {
+    //     if (depth == 0) {
+    //         return move;
+    //     }
+
+    //     board boardc = *this;
+    //     boardc.move(move);
+    //     vector<::move> moves = boardc.possibleMoves();
+
+    //     for (::move &move : moves) {
+    //         board boardc2 = *this;
+    //         boardc2.move(move);
+    //         counter++;
+    //         move.eval = boardc2.findMoveDepth(depth - 1, move, counter).eval;
+    //     }
+
+    //     sort(moves.begin(), moves.end(), [](const ::move &a, const ::move &b) { return a.eval > b.eval; });
+
+    //     return moves[0];
+    // }
+
+    void printMoveList(vector<::move> &moves) {
+        for (::move &move : moves) {
+            // board.printMove(move);
+            cerr
+                << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) : (char)toupper(move.piece->piece)]
+                << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
+                << (char)(move.torow + '1') << "\x1B[0;32m"
+                << (string(1, move.promotion) != " "
+                        ? string(1, move.promotion)
+                        : (move.enpassantrow != -2
+                               ? "*"
+                               : (move.castling
+                                      ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" + piecesmap['R'])
+                                      : "")))
+                << (move.fap[0] != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
+                << (move.attacking || move.fap[0] != -2
+                        ? piecesmap[move.piece->color[1] ? (char)tolower(pieces[move.torow][move.tocol].piece)
+                                                         : (char)toupper(pieces[move.torow][move.tocol].piece)]
+                        : "")
+                << "\x1B[0m"
+                << "\x1B[2m\x1B[90m  \t   " /* << move.fromrow << move.fromcol << " " << move.torow << move.tocol */
+                << move.eval << "\x1B[0m\x1B[49m" << endl;
+        };
+    }
+
+    ::move findMoveDepth(int depth, atomic<int> &counter) {
+        bool iamoriginal = counter == 0;
+
+        // list moves
+        vector<::move> moves = possibleMoves();
+
+        // wait for all threads to finish
+        if (iamoriginal) {
+            vector<thread *> threads;
+            // for (::move &move : moves) {
+            for (int i = 0; i < moves.size(); i++) {
+                ::move move = moves[i];
+
+                board *boardb = new board(*this);
+                board &boardc = *boardb;
+
+                boardc.move(move);
+                counter++;
+
+                boardc.toggleWhoseToMove();
+
+                thread *t = new thread{([&, boardb, i]() {
+                    board boardc = *boardb;
+
+                    int oe = boardc.findMoveDepth(depth - 1, counter).eval;
+                    if (oe != 696969)
+                        moves[i].eval = oe;
+                })};
+
+                threads.push_back(t);
+            }
+
+            cout << threads.size() << endl;
+            for (thread *t : threads) {
+                (*t).join();
+            }
+
+            // desctruct everything properly
+
+            // something?
+        } else {
+            // for every move, think of opponent response
+            for (::move &move : moves) {
+                board boardc = *this;
+                boardc.move(move);
+                counter++;
+
+                boardc.toggleWhoseToMove();
+
+                if (depth > 0) {
+                    int oe = boardc.findMoveDepth(depth - 1, counter).eval;
+                    if (oe != 696969)
+                        move.eval = oe;
+                }
+            }
+        }
+
+        // sort moves by eval
+        sort(
+            moves.begin(), moves.end(),
+            whoami == whosetomove ? [](const ::move &a, const ::move &b) { return a.eval > b.eval; }
+                                  : [](const ::move &a, const ::move &b) { return a.eval < b.eval; });
+
+        if (iamoriginal) {
+            printMoveList(moves);
+        }
+
+        if (moves.size() == 0) {
+            return {.eval = 696969};
+        }
+
+        return moves[0];
+    }
 };
 
 int main(int argc, char *argv[]) {
@@ -1307,10 +1572,15 @@ int main(int argc, char *argv[]) {
 #endif
     board board;
 
+    // board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2Np/n1PP4/3B2bR/1P3P1P/RNBQK2R w QK b6 4 13");
+
     set<string_view> args{argv + 1, argv + argc};
     if (args.contains("--black")) {
-        cout << "I'm black" << endl;
+        // cout << "I'm black" << endl;
         board.whoami = true;
+    } else {
+        board.actuallyMove({&board.pieces[1][4], 1, 4, 3, 4, -2, -2, ' ', false, false, {-2, -2}, 0});
+        board.draw();
     }
 
     // let's for now just assume I'm white (hmm, that sounds kinda racist)
@@ -1318,11 +1588,12 @@ int main(int argc, char *argv[]) {
         getline(cin, input_move);
         // input_move = "e2e4";
         if (input_move.length() != 4 && input_move.length() != 5) {
-            exit(EXIT_FAILURE);
-            // continue;
+            // exit(EXIT_FAILURE);
+            continue;
         }
 
-        // board.move(input_move);
+        board.move(input_move);
+        board.toggleWhoseToMove();
 
         // example with possibilities for pawns to go sideways, forward, promote (also capturing promotion),
         // castle (not the pawns), en passant, discovery checks
@@ -1359,45 +1630,52 @@ int main(int argc, char *argv[]) {
 
         // relatively complicated legality check
         // board.loadfen("k7/8/8/2rr1n2/4b3/4p3/3K4/2r5 w - - 2 2");
-        board.loadfen("8/4k3/8/2q5/1B6/4B3/5K2/1R6 w - - 0 1");
+        // board.loadfen("8/4k3/8/2q5/1B6/4B3/5K2/1R6 w - - 0 1");
         // board.loadfen("1k6/8/8/3r1b2/8/3K1Q2/8/8 w - - 1 1");
         // board.move(input_move);
         // board.toggleWhoseToMove();
 
         // board.move("a5b6");
 
-        vector<::move> possibleMoves = board.possibleMoves();
-        for (::move &move : possibleMoves) {
-            // board.printMove(move);
-            cout
-                << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) : (char)toupper(move.piece->piece)]
-                << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
-                << (char)(move.torow + '1') << "\x1B[0;32m"
-                << (string(1, move.promotion) != " "
-                        ? string(1, move.promotion)
-                        : (move.enpassantrow != -2
-                               ? "*"
-                               : (move.castling
-                                      ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" + piecesmap['R'])
-                                      : "")))
-                << (move.fap[0] != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
-                << (move.attacking || move.fap[0] != -2
-                        ? piecesmap[move.piece->color[1] ? (char)tolower(board.pieces[move.torow][move.tocol].piece)
-                                                         : (char)toupper(board.pieces[move.torow][move.tocol].piece)]
-                        : "")
-                << "\x1B[0m"
-                << "\x1B[2m\x1B[90m  \t     " << move.fromrow << move.fromcol << " " << move.torow << move.tocol
-                << "\x1B[0m\x1B[49m" << endl;
-        };
+        // vector<::move> possibleMoves = board.possibleMoves();
+        // for (::move &move : possibleMoves) {
+        //     // board.printMove(move);
+        //     cerr
+        //         << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) :
+        //         (char)toupper(move.piece->piece)]
+        //         << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
+        //         << (char)(move.torow + '1') << "\x1B[0;32m"
+        //         << (string(1, move.promotion) != " "
+        //                 ? string(1, move.promotion)
+        //                 : (move.enpassantrow != -2
+        //                        ? "*"
+        //                        : (move.castling
+        //                               ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" +
+        //                               piecesmap['R']) : "")))
+        //         << (move.fap[0] != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
+        //         << (move.attacking || move.fap[0] != -2
+        //                 ? piecesmap[move.piece->color[1] ? (char)tolower(board.pieces[move.torow][move.tocol].piece)
+        //                                                  : (char)toupper(board.pieces[move.torow][move.tocol].piece)]
+        //                 : "")
+        //         << "\x1B[0m"
+        //         << "\x1B[2m\x1B[90m  \t   " /* << move.fromrow << move.fromcol << " " << move.torow << move.tocol */
+        //         << move.eval << "\x1B[0m\x1B[49m" << endl;
+        // };
 
         // amout of possible moves
-        cout << possibleMoves.size() << endl << endl;
+        // cerr << possibleMoves.size() << endl << endl;
 
-        // board.move(board.possibleMoves()[0]);
+        atomic<int> counter = 0;
+        auto start = chrono::high_resolution_clock::now();
+        ::move bestMove = board.findMoveDepth(4, counter);
+        board.actuallyMove(bestMove);
+        cerr << counter / 1000 / (duration_cast<chrono::seconds>(chrono::high_resolution_clock::now() - start)).count()
+             << "K positions per second" << endl
+             << "(" << counter << " total)" << endl;
 
         board.draw();
 
-        cout << board.eval() << endl;
+        // cout << board.eval() << endl;
 
         exit(EXIT_SUCCESS);
     }
