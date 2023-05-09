@@ -1,3 +1,13 @@
+breadcrumbs, say why this move
+make eval more advanced
+
+better threading?
+
+    `    std::atomic<std::shared_ptr<std::string>> *bcrumb =
+        &(std::atomic<std::shared_ptr<std::string>>(std::make_shared<std::string>("hello")));`
+
+
+
 todo:
  test ability enpassant & castling (only testing)
 
