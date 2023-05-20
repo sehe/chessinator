@@ -61,8 +61,8 @@ struct board {
         {{0b01, 'r', 500},
          {0b01, 'n', 300},
          {0b01, 'b', 300},
-         {0b01, 'k', 100000},
-         {0b01, 'q', 900},
+         {0b01, 'q', 100000},
+         {0b01, 'k', 900},
          {0b01, 'b', 300},
          {0b01, 'n', 300},
          {0b01, 'r', 500}},
@@ -119,8 +119,8 @@ struct board {
         {{0b11, 'r', 500},
          {0b11, 'n', 300},
          {0b11, 'b', 300},
-         {0b11, 'k', 100000},
-         {0b11, 'q', 900},
+         {0b11, 'q', 100000},
+         {0b11, 'k', 900},
          {0b11, 'b', 300},
          {0b11, 'n', 300},
          {0b11, 'r', 500}},
@@ -238,7 +238,7 @@ struct board {
 
                 // move rook
                 pieces[move.torow][5] = pieces[move.torow][7];
-                pieces[move.torow][move.tocol] = emptypiece;
+                pieces[move.torow][7] = emptypiece;
             } else if (move.tocol == 0) {
                 // queenside
 
@@ -248,7 +248,7 @@ struct board {
 
                 // move rook
                 pieces[move.torow][3] = pieces[move.torow][0];
-                pieces[move.torow][move.tocol] = emptypiece;
+                pieces[move.torow][0] = emptypiece;
             }
         } else if (move.enpassantcol != -2) {
             // enpassant
@@ -267,7 +267,7 @@ struct board {
             pieces[move.fromrow][move.fromcol] = emptypiece;
 
             // change piece.piece to requested promotion piece
-            pieces[move.torow][move.tocol].piece = move.promotion;
+            pieces[move.torow][move.tocol].piece = (char)tolower(move.promotion);
         }
 
         else {
@@ -301,6 +301,8 @@ struct board {
     };
 
     void draw() {
+        // return;
+
         cerr << "row\r\n↓";
         for (int i = 0; i < 9; i++) {
             cerr << "\x1B[49m" << endl;
@@ -497,17 +499,17 @@ struct board {
 
                                 moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
+                                                 static_cast<unsigned int>(rownumb - 1),
                                                  static_cast<unsigned int>(colnumb + 1), -2, -2, 'n', false});
 
                                 moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
+                                                 static_cast<unsigned int>(rownumb - 1),
                                                  static_cast<unsigned int>(colnumb + 1), -2, -2, 'b', false});
 
                                 moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
+                                                 static_cast<unsigned int>(rownumb - 1),
                                                  static_cast<unsigned int>(colnumb + 1), -2, -2, 'r', false});
                             } else {
                                 moves.push_back(
@@ -1046,7 +1048,7 @@ struct board {
 
                     if (isLegal)
                         moves.push_back({&pieces[7][4], static_cast<unsigned int>(7), static_cast<unsigned int>(4),
-                                         static_cast<unsigned int>(7), static_cast<unsigned int>(2), -2, -2, ' ',
+                                         static_cast<unsigned int>(7), static_cast<unsigned int>(0), -2, -2, ' ',
                                          true});
                 }
             }
@@ -1122,8 +1124,6 @@ struct board {
                     // break;
                 }
             }
-        } else {
-            // cerr << "king not found!" << endl;
         }
 
         auto it = remove_if(moves.begin(), moves.end(), [&](::move &move) {
@@ -1198,8 +1198,9 @@ struct board {
         moves.erase(it, moves.end());
 
         if (moves.size() == 0) {
-            if (kingrow == -2)
-                moves.push_back({&pieces[0][0], static_cast<unsigned int>(0), static_cast<unsigned int>(0),
+            // cout << "0 moves!" << endl;
+            if (kingIsInCheck)
+                moves.push_back({&emptypiece, static_cast<unsigned int>(0), static_cast<unsigned int>(0),
                                  static_cast<unsigned int>(0), static_cast<unsigned int>(0)});
             else
                 moves.push_back({&pieces[kingrow][kingcol], static_cast<unsigned int>(kingrow),
@@ -1362,6 +1363,7 @@ struct board {
     }
 
     void printMoveList(vector<::move> &moves) {
+        // return;
         for (::move &move : moves) {
             // board.printMove(move);
             cerr
@@ -1386,6 +1388,22 @@ struct board {
         };
     }
 
+    int eEval() {
+        // check for immobility
+        auto moves = possibleMoves();
+        if (moves.size() == 1 && moves[0].fromcol == moves[0].tocol && moves[0].fromrow == moves[0].torow) {
+            // check for mate
+            if (moves[0].piece->piece != 'k') {
+                return 200000;
+            }
+
+            // else stalemate
+            return 0;
+        }
+
+        return -1;
+    };
+
     ::move findMoveDepth(int depth, atomic<int> &counter, int x, int y) {
         bool iamoriginal = counter == 0;
 
@@ -1397,6 +1415,17 @@ struct board {
             vector<tuple<thread *, board *>> threads;
             // for (::move &move : moves) {
             for (int i = 0; i < moves.size(); i++) {
+                // if (stillMates(moves[i])) {
+                //     moves[i].eval = 696970;
+                //     // moves[i].eval = 0;
+                //     // continue;
+                // }
+
+                // if (!(moves[i].fromcol == 0 && moves[i].fromrow == 5 && moves[i].tocol == 1 && moves[i].torow == 3))
+                //     continue;
+
+                // cout << moves[i].fromcol << moves[i].fromrow << moves[i].tocol << moves[i].torow << endl;
+
                 counter++;
 
                 board *boardb = new board(*this);
@@ -1407,6 +1436,12 @@ struct board {
                     board &boardc = *boardb;
                     boardc.move(move);
                     boardc.toggleWhoseToMove();
+
+                    int e = boardc.eEval();
+                    if (e != -1) {
+                        moves[i].eval = e;
+                        return;
+                    }
 
                     ::move oe = boardc.findMoveDepth(depth - 1, counter, 0, 0);
                     if (oe.eval != 696969)
@@ -1427,26 +1462,25 @@ struct board {
         } else {
             // for every move, think of opponent response
             for (::move &move : moves) {
-                board boardc = *this;
-                if (boardc.pieces[move.torow][move.tocol].piece == ' ') {
-                    x++;
-                    y++;
+                int xx = x;
+                int yy = y;
+
+                if (this->pieces[move.torow][move.tocol].piece == ' ') {
+                    xx++;
+                    yy++;
                 } else
-                    x = 0;
+                    xx = 0;
 
-                boardc.move(move);
-                counter++;
+                if (depth > 0 && xx <= 3 && yy <= 4) { // 5 12    3 8
+                    board boardc = *this;
+                    boardc.move(move);
+                    counter++;
 
-                boardc.toggleWhoseToMove();
+                    boardc.toggleWhoseToMove();
 
-                if (depth > 0 && x <= 5 && y <= 14) {
-                    ::move oe = boardc.findMoveDepth(depth - 1, counter, x, y);
+                    ::move oe = boardc.findMoveDepth(depth - 1, counter, xx, yy);
+
                     if (oe.eval != 696969) {
-                        if (move.eval > 90000)
-                            oe.eval += depth;
-                        if (move.eval < -90000)
-                            oe.eval -= depth;
-
                         move.eval = oe.eval;
                     }
                 }
@@ -1489,16 +1523,73 @@ int main(int argc, char *argv[]) {
 #endif
     board board;
 
-    // board.loadfen("1rbk2nr/p2q1Ppp/2p1p3/Pp1p2Np/n1PP4/3B2bR/1P3P1P/RNBQK2R w QK b6 4 13");
+    // board.loadfen("rnb4r/3k1p1p/pp3np1/2pp1p2/8/5PP1/3bq1KP/3N1R2 w - - 2 28");
+
+    // for (int i = 0; i < 1000; i++) {
+    //     ::board boardc = board;
+    //     boardc.move("d1f2");
+    //     boardc.toggleWhoseToMove();
+
+    //     atomic<int> counter = 0;
+    //     auto start = chrono::steady_clock::now();
+
+    //     ::move bestMove = boardc.findMoveDepth(depth, counter, 0, 0);
+    //     boardc.actuallyMove(bestMove);
+    //     cerr << counter / ((chrono::steady_clock::now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
+    //          << "(" << counter << " total)" << endl;
+
+    //     // boardc.draw();
+    // }
+
+    // return 0;
 
     // board.loadfen("1r3bk1/5p1p/pp1N2p1/2ppP3/P5PP/1P1P2K1/2P5/4R3 w - - 2 31");
     // 5.80697M positions per second 5.5M
     // (63023041 total)
 
+    // for (std::string mv :
+    //      {"c2c3", "g8h6", "d2d4", "b7b6", "c1d2", "h6g4", "d2e3", "g4e3", "b1d2", "e3d1", "d2b3", "d1b2",
+    //       "a2a3", "b8a6", "b3d2", "g7g5", "f2f3", "c7c6", "d4d5", "c6d5", "d2b3", "f7f6", "g1h3", "b2c4",
+    //       /* "e1c1", "g5g4", "h1g1", "g4h3", "c1c2", "h3g2", "f1g2", "c4e3", "c2b1", "e3g2", "b3d4", "g2f4",
+    //       "b1b2", "e8f7", "d1a1", "d7d6", "b2a2", "d8c7", "g1e1", "c7c3", "e1d1", "c8b7", "h2h3", "f4h3",
+    //       "d1g1", "h3g1", "a1d1", "c3d4", "d1f1", "d4c4", "a2b1", "c4b3", "b1c1", "g1e2", "c1d2", "e2f4",
+    //       "d2e1", "b3e3", "e1d1", "e3a3", "f1h1", "a3c3", "h1h7" */}) {
+    //     board.move(mv);
+    //     board.toggleWhoseToMove();
+    // }
+
     set<string_view> args{argv + 1, argv + argc};
+    int depth = 5;
+
+    if (args.contains("--stupid")) {
+        cerr << "started in stupid mode" << endl;
+        depth = 3;
+    } else if (args.contains("--ultrastupid")) {
+        cerr << "started in ultrastupid mode" << endl;
+        depth = 2;
+    }
+
     if (args.contains("--black")) {
         // cout << "I'm black" << endl;
         board.whoami = true;
+
+        // board.loadfen("3RK3/8/8/4Q3/8/b1R5/3k4/8 b - - 3 2");
+        // // board.loadfen("r3k3/8/8/4q3/8/2r5/3K4/8 b q - 1 1");
+
+        // atomic<int> counter = 0;
+        // auto start = chrono::steady_clock::now();
+
+        // // board.move("c7c8Q");
+        // // board.toggleWhoseToMove();
+        // board.draw();
+
+        // ::move bestMove = board.findMoveDepth(stupid ? 3 : 5, counter, 0, 0);
+        // board.actuallyMove(bestMove);
+        // cerr << counter / ((chrono::steady_clock::now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
+        //      << "(" << counter << " total)" << endl;
+
+        // board.draw();
+        // exit(EXIT_SUCCESS);
     } else {
         board.actuallyMove({&board.pieces[1][4], 1, 4, 3, 4, -2, -2, ' ', false, false, {-2, -2}, 0});
         board.draw();
@@ -1509,6 +1600,7 @@ int main(int argc, char *argv[]) {
         getline(cin, input_move);
         // input_move = "e2e4";
         if (input_move.length() != 4 && input_move.length() != 5) {
+            cerr << "Invalid move: " << input_move << " of length " << input_move.length() << endl;
             // exit(EXIT_FAILURE);
             continue;
         }
@@ -1595,15 +1687,15 @@ int main(int argc, char *argv[]) {
         atomic<int> counter = 0;
         auto start = chrono::steady_clock::now();
 
-        ::move bestMove = board.findMoveDepth(21, counter, 0, 0);
+        ::move bestMove = board.findMoveDepth(depth, counter, 0, 0);
         board.actuallyMove(bestMove);
-        cerr << counter / ((chrono::steady_clock::now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
+        cerr << counter / ((chrono::steady_clock::now() - start) / 1.0s) << "M positions per second" << endl
              << "(" << counter << " total)" << endl;
 
         board.draw();
 
         // cout << board.eval() << endl;
 
-        exit(EXIT_SUCCESS);
+        // exit(EXIT_SUCCESS);
     }
 }
