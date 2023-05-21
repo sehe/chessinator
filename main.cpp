@@ -54,11 +54,11 @@ struct Move {
      */
 
     Piece const *piece;
-    unsigned int fromrow : 3;
-    unsigned int fromcol : 3;
+    unsigned fromrow : 3;
+    unsigned fromcol : 3;
 
-    unsigned int torow : 3;
-    unsigned int tocol : 3;
+    unsigned torow : 3;
+    unsigned tocol : 3;
 
     int enpassantrow : 4 = -2;
     int enpassantcol : 4 = -2;
@@ -159,10 +159,10 @@ struct board {
             (move == "e1h1" || move == "e1a1" || move == "e8h8" || move == "e8a8")) {
             // castling
             cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
-                     static_cast<unsigned int>(move[1] - '1'),
-                     static_cast<unsigned int>(move[0] - 'a'),
-                     static_cast<unsigned int>(move[3] - '1'),
-                     static_cast<unsigned int>(move[2] - 'a'),
+                     static_cast<unsigned>(move[1] - '1'),
+                     static_cast<unsigned>(move[0] - 'a'),
+                     static_cast<unsigned>(move[3] - '1'),
+                     static_cast<unsigned>(move[2] - 'a'),
                      -2,
                      -2,
                      ' ',
@@ -171,10 +171,10 @@ struct board {
                    pieces[move[3] - '1'][move[2] - 'a'].piece == ' ') { // (if capturing empty piece)
             // enpassant
             cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
-                     static_cast<unsigned int>(move[1] - '1'),
-                     static_cast<unsigned int>(move[0] - 'a'),
-                     static_cast<unsigned int>(move[3] - '1'),
-                     static_cast<unsigned int>(move[2] - 'a'),
+                     static_cast<unsigned>(move[1] - '1'),
+                     static_cast<unsigned>(move[0] - 'a'),
+                     static_cast<unsigned>(move[3] - '1'),
+                     static_cast<unsigned>(move[2] - 'a'),
                      move[3] - '1',
                      move[2] - 'a',
                      ' ',
@@ -182,19 +182,19 @@ struct board {
         } else if (move.length() == 5) {
             // promotion
             cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
-                     static_cast<unsigned int>(move[1] - '1'),
-                     static_cast<unsigned int>(move[0] - 'a'),
-                     static_cast<unsigned int>(move[3] - '1'),
-                     static_cast<unsigned int>(move[2] - 'a'),
+                     static_cast<unsigned>(move[1] - '1'),
+                     static_cast<unsigned>(move[0] - 'a'),
+                     static_cast<unsigned>(move[3] - '1'),
+                     static_cast<unsigned>(move[2] - 'a'),
                      -2,
                      -2,
                      move[4],
                      false};
         } else {
             // if not any of the weird cases, just move the piece
-            cmove = {&pieces[move[1] - '1'][move[0] - 'a'], static_cast<unsigned int>(move[1] - '1'),
-                     static_cast<unsigned int>(move[0] - 'a'), static_cast<unsigned int>(move[3] - '1'),
-                     static_cast<unsigned int>(move[2] - 'a')};
+            cmove = {&pieces[move[1] - '1'][move[0] - 'a'], static_cast<unsigned>(move[1] - '1'),
+                     static_cast<unsigned>(move[0] - 'a'), static_cast<unsigned>(move[3] - '1'),
+                     static_cast<unsigned>(move[2] - 'a')};
         }
 
         this->applyMove(cmove);
@@ -350,8 +350,8 @@ struct board {
         char fen[90];
 
         struct {
-            unsigned int fenpos : 7;
-            unsigned int empty : 3;
+            unsigned fenpos : 7;
+            unsigned empty : 3;
         } state = {0, 0};
 
         // for (piece(&row)[8] : pieces) {
@@ -438,38 +438,38 @@ struct board {
                         if (rownumb - 1 > -1 && pieces[rownumb - 1][colnumb].color[0] == 0) {
                             if (rownumb - 1 == 0) {
                                 // promotion
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'q', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'q', false, false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'n', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'n', false, false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'b', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'b', false, false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'r', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'r', false, false});
                             } else {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, ' ', false, false});
                             }
 
                             // 2 forward, but only if on starting row & not going through another piece
                             if (rownumb == 6 && rownumb - 2 > -1 && pieces[rownumb - 2][colnumb].color[0] == 0) {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 2),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 2),
+                                                 static_cast<unsigned>(colnumb), -2, -2, ' ', false, false});
                             }
                         };
 
@@ -480,29 +480,29 @@ struct board {
                              imo)) {
                             if (rownumb - 1 == 0) {
                                 // promotion
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'q', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'q', false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'n', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'n', false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'b', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'b', false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'r', false});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb - 1), static_cast<unsigned int>(colnumb - 1)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb - 1), static_cast<unsigned>(colnumb - 1)});
                             }
                         }
                         if (rownumb - 1 > -1 && colnumb + 1 < 8 &&
@@ -511,37 +511,37 @@ struct board {
                              imo)) {
                             if (rownumb - 1 == 0) {
                                 // promotion
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'q', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'q', false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'n', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'n', false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'b', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'b', false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb - 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb - 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'r', false});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb - 1), static_cast<unsigned int>(colnumb + 1)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb - 1), static_cast<unsigned>(colnumb + 1)});
                             }
                         }
 
                         // en passant
                         if (rownumb == 3 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(2),
-                                             static_cast<unsigned int>(enpassant[0]), 2, enpassant[0]});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(2),
+                                             static_cast<unsigned>(enpassant[0]), 2, enpassant[0]});
                         }
                     } else {
                         // white
@@ -550,38 +550,38 @@ struct board {
                         if (rownumb + 1 < 8 && pieces[rownumb + 1][colnumb].color[0] == 0) {
                             if (rownumb + 1 == 7) {
                                 // promotion
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'q', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'q', false, false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'n', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'n', false, false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'b', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'b', false, false});
 
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, 'r', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, 'r', false, false});
                             } else {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb), -2, -2, ' ', false, false});
                             }
 
                             // 2 forward, but only if on starting row & not going through another piece
                             if (rownumb == 1 && rownumb + 2 < 8 && pieces[rownumb + 2][colnumb].color[0] == 0) {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 2),
-                                                 static_cast<unsigned int>(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 2),
+                                                 static_cast<unsigned>(colnumb), -2, -2, ' ', false, false});
                             }
                         };
 
@@ -593,26 +593,26 @@ struct board {
                             // left
                             if (rownumb == 6) {
                                 // promotion
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'q', false});
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'n', false});
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'b', false});
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb - 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'q', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'n', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'b', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb - 1), -2, -2, 'r', false});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb + 1), static_cast<unsigned int>(colnumb - 1)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb + 1), static_cast<unsigned>(colnumb - 1)});
                             }
                         };
                         if (rownumb + 1 < 8 && colnumb + 1 < 8 &&
@@ -622,34 +622,34 @@ struct board {
                             // right
                             if (rownumb == 6) {
                                 // promotion
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'q', false});
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'n', false});
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'b', false});
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb),
-                                                 static_cast<unsigned int>(rownumb + 1),
-                                                 static_cast<unsigned int>(colnumb + 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'q', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'n', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'b', false});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb),
+                                                 static_cast<unsigned>(rownumb + 1),
+                                                 static_cast<unsigned>(colnumb + 1), -2, -2, 'r', false});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb + 1), static_cast<unsigned int>(colnumb + 1)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb + 1), static_cast<unsigned>(colnumb + 1)});
                             };
                         };
 
                         // en passant
                         if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(5),
-                                             static_cast<unsigned int>(enpassant[0]), 5, enpassant[0]});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(5),
+                                             static_cast<unsigned>(enpassant[0]), 5, enpassant[0]});
                         }
                     }
                     break;
@@ -666,13 +666,13 @@ struct board {
                     for (int i = colnumb - 1; i > -1; i--) {
                         if (imo) {
                             if (pieces[rownumb][i].color == 0b00) {
-                                moves.push_back(Move{&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(i)});
+                                moves.push_back(Move{&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(i)});
                             } else {
-                                moves.push_back(Move{&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(i), .fap = {rownumb, i}});
+                                moves.push_back(Move{&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(i), .fap = {rownumb, i}});
 
                                 if (pieces[rownumb][i].piece != 'k')
                                     break;
@@ -682,9 +682,9 @@ struct board {
                                 pieces[rownumb][i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(i)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(i)});
 
                             if (pieces[rownumb][i].color[0] == 0b1)
                                 break;
@@ -698,13 +698,13 @@ struct board {
                     for (int i = colnumb + 1; i < 8; i++) {
                         if (imo) {
                             if (pieces[rownumb][i].color == 0b00) {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(i)});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(i)});
                             } else {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(i), .fap = {rownumb, i}});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(i), .fap = {rownumb, i}});
 
                                 if (pieces[rownumb][i].piece != 'k')
                                     break;
@@ -714,9 +714,9 @@ struct board {
                                 pieces[rownumb][i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(i)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(i)});
 
                             if (pieces[rownumb][i].color[0] == 0b1)
                                 break;
@@ -730,13 +730,13 @@ struct board {
                     for (int i = rownumb + 1; i < 8; i++) {
                         if (imo) {
                             if (pieces[i][colnumb].color == 0b00) {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
-                                                 static_cast<unsigned int>(colnumb)});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(i),
+                                                 static_cast<unsigned>(colnumb)});
                             } else {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
-                                                 static_cast<unsigned int>(colnumb), .fap = {i, colnumb}});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(i),
+                                                 static_cast<unsigned>(colnumb), .fap = {i, colnumb}});
 
                                 if (pieces[i][colnumb].piece != 'k')
                                     break;
@@ -746,9 +746,9 @@ struct board {
                                 pieces[i][colnumb].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
-                                             static_cast<unsigned int>(colnumb)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(i),
+                                             static_cast<unsigned>(colnumb)});
 
                             if (pieces[i][colnumb].color[0] == 0b1)
                                 break;
@@ -762,13 +762,13 @@ struct board {
                     for (int i = rownumb - 1; i > -1; i--) {
                         if (imo) {
                             if (pieces[i][colnumb].color == 0b00) {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
-                                                 static_cast<unsigned int>(colnumb)});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(i),
+                                                 static_cast<unsigned>(colnumb)});
                             } else {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                                 static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
-                                                 static_cast<unsigned int>(colnumb), .fap = {i, colnumb}});
+                                moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                                 static_cast<unsigned>(colnumb), static_cast<unsigned>(i),
+                                                 static_cast<unsigned>(colnumb), .fap = {i, colnumb}});
 
                                 if (pieces[i][colnumb].piece != 'k')
                                     break;
@@ -778,9 +778,9 @@ struct board {
                                 pieces[i][colnumb].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
-                                             static_cast<unsigned int>(colnumb)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(i),
+                                             static_cast<unsigned>(colnumb)});
 
                             if (pieces[i][colnumb].color[0] == 0b1)
                                 break;
@@ -801,12 +801,12 @@ struct board {
                         if (imo) {
                             if (pieces[rownumb + i][colnumb - i].color == 0b00) {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb - i)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb + i), static_cast<unsigned>(colnumb - i)});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb - i),
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb + i), static_cast<unsigned>(colnumb - i),
                                      .fap = {rownumb + i, colnumb - i}});
 
                                 if (pieces[rownumb + i][colnumb - i].piece != 'k')
@@ -817,9 +817,9 @@ struct board {
                                 pieces[rownumb + i][colnumb - i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + i),
-                                             static_cast<unsigned int>(colnumb - i)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb + i),
+                                             static_cast<unsigned>(colnumb - i)});
 
                             if (pieces[rownumb + i][colnumb - i].color[0] == 0b1)
                                 break;
@@ -834,12 +834,12 @@ struct board {
                         if (imo) {
                             if (pieces[rownumb - i][colnumb - i].color == 0b00) {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb - i)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb - i), static_cast<unsigned>(colnumb - i)});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb - i),
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb - i), static_cast<unsigned>(colnumb - i),
                                      .fap = {rownumb - i, colnumb - i}});
 
                                 if (pieces[rownumb - i][colnumb - i].piece != 'k')
@@ -850,9 +850,9 @@ struct board {
                                 pieces[rownumb - i][colnumb - i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb - i),
-                                             static_cast<unsigned int>(colnumb - i)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb - i),
+                                             static_cast<unsigned>(colnumb - i)});
 
                             if (pieces[rownumb - i][colnumb - i].color[0] == 0b1)
                                 break;
@@ -867,12 +867,12 @@ struct board {
                         if (imo) {
                             if (pieces[rownumb + i][colnumb + i].color == 0b00) {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb + i)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb + i), static_cast<unsigned>(colnumb + i)});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb + i),
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb + i), static_cast<unsigned>(colnumb + i),
                                      .fap = {rownumb + i, colnumb + i}});
 
                                 if (pieces[rownumb + i][colnumb + i].piece != 'k')
@@ -883,9 +883,9 @@ struct board {
                                 pieces[rownumb + i][colnumb + i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb + i),
-                                             static_cast<unsigned int>(colnumb + i)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb + i),
+                                             static_cast<unsigned>(colnumb + i)});
 
                             if (pieces[rownumb + i][colnumb + i].color[0] == 0b1)
                                 break;
@@ -900,12 +900,12 @@ struct board {
                         if (imo) {
                             if (pieces[rownumb - i][colnumb + i].color == 0b00) {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb + i)});
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb - i), static_cast<unsigned>(colnumb + i)});
                             } else {
                                 moves.push_back(
-                                    {&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                     static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb + i),
+                                    {&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                     static_cast<unsigned>(rownumb - i), static_cast<unsigned>(colnumb + i),
                                      .fap = {rownumb - i, colnumb + i}});
 
                                 if (pieces[rownumb - i][colnumb + i].piece != 'k')
@@ -916,9 +916,9 @@ struct board {
                                 pieces[rownumb - i][colnumb + i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, static_cast<unsigned int>(rownumb),
-                                             static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb - i),
-                                             static_cast<unsigned int>(colnumb + i)});
+                            moves.push_back({&piece, static_cast<unsigned>(rownumb),
+                                             static_cast<unsigned>(colnumb), static_cast<unsigned>(rownumb - i),
+                                             static_cast<unsigned>(colnumb + i)});
 
                             if (pieces[rownumb - i][colnumb + i].color[0] == 0b1)
                                 break;
@@ -937,9 +937,9 @@ struct board {
                     if (rownumb + 2 < 8 && colnumb - 1 > -1 &&
                         (pieces[rownumb + 2][colnumb - 1].color[0] == 0b0 ||
                          pieces[rownumb + 2][colnumb - 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb + 2),
-                                         static_cast<unsigned int>(colnumb - 1)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb + 2),
+                                         static_cast<unsigned>(colnumb - 1)});
 
                     //  _   (rownumb + 2, colnumb + 1)
                     // |
@@ -947,35 +947,35 @@ struct board {
                     if (rownumb + 2 < 8 && colnumb + 1 < 8 &&
                         (pieces[rownumb + 2][colnumb + 1].color[0] == 0b0 ||
                          pieces[rownumb + 2][colnumb + 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb + 2),
-                                         static_cast<unsigned int>(colnumb + 1)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb + 2),
+                                         static_cast<unsigned>(colnumb + 1)});
 
                     // |__ (colnumb - 2, rownumb + 1)
                     if (colnumb - 2 > -1 && rownumb + 1 < 8 &&
                         (pieces[rownumb + 1][colnumb - 2].color[0] == 0b0 ||
                          pieces[rownumb + 1][colnumb - 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb + 1),
-                                         static_cast<unsigned int>(colnumb - 2)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb + 1),
+                                         static_cast<unsigned>(colnumb - 2)});
 
                     //  __ (colnumb - 2, rownumb - 1)
                     // |
                     if (colnumb - 2 > -1 && rownumb - 1 > -1 &&
                         (pieces[rownumb - 1][colnumb - 2].color[0] == 0b0 ||
                          pieces[rownumb - 1][colnumb - 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb - 1),
-                                         static_cast<unsigned int>(colnumb - 2)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb - 1),
+                                         static_cast<unsigned>(colnumb - 2)});
 
                     // |
                     // |__ (colnumb + 1, rownumb - 2)
                     if (colnumb + 1 < 8 && rownumb - 2 > -1 &&
                         (pieces[rownumb - 2][colnumb + 1].color[0] == 0b0 ||
                          pieces[rownumb - 2][colnumb + 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb - 2),
-                                         static_cast<unsigned int>(colnumb + 1)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb - 2),
+                                         static_cast<unsigned>(colnumb + 1)});
 
                     // |
                     // |
@@ -983,26 +983,26 @@ struct board {
                     if (colnumb - 1 > -1 && rownumb - 2 > -1 &&
                         (pieces[rownumb - 2][colnumb - 1].color[0] == 0b0 ||
                          pieces[rownumb - 2][colnumb - 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb - 2),
-                                         static_cast<unsigned int>(colnumb - 1)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb - 2),
+                                         static_cast<unsigned>(colnumb - 1)});
 
                     // __| (colnumb + 2, rownumb + 1)
                     if (colnumb + 2 < 8 && rownumb + 1 < 8 &&
                         (pieces[rownumb + 1][colnumb + 2].color[0] == 0b0 ||
                          pieces[rownumb + 1][colnumb + 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb + 1),
-                                         static_cast<unsigned int>(colnumb + 2)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb + 1),
+                                         static_cast<unsigned>(colnumb + 2)});
 
                     // __
                     //   | (colnumb + 2, rownumb - 1)
                     if (colnumb + 2 < 8 && rownumb - 1 > -1 &&
                         (pieces[rownumb - 1][colnumb + 2].color[0] == 0b0 ||
                          pieces[rownumb - 1][colnumb + 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, static_cast<unsigned int>(rownumb), static_cast<unsigned int>(colnumb),
-                                         static_cast<unsigned int>(rownumb - 1),
-                                         static_cast<unsigned int>(colnumb + 2)});
+                        moves.push_back({&piece, static_cast<unsigned>(rownumb), static_cast<unsigned>(colnumb),
+                                         static_cast<unsigned>(rownumb - 1),
+                                         static_cast<unsigned>(colnumb + 2)});
                     break;
                 }
                 }
@@ -1038,8 +1038,8 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[7][4], static_cast<unsigned int>(7), static_cast<unsigned int>(4),
-                                         static_cast<unsigned int>(7), static_cast<unsigned int>(7), -2, -2, ' ',
+                        moves.push_back({&pieces[7][4], static_cast<unsigned>(7), static_cast<unsigned>(4),
+                                         static_cast<unsigned>(7), static_cast<unsigned>(7), -2, -2, ' ',
                                          true});
                 }
             }
@@ -1066,8 +1066,8 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[7][4], static_cast<unsigned int>(7), static_cast<unsigned int>(4),
-                                         static_cast<unsigned int>(7), static_cast<unsigned int>(0), -2, -2, ' ',
+                        moves.push_back({&pieces[7][4], static_cast<unsigned>(7), static_cast<unsigned>(4),
+                                         static_cast<unsigned>(7), static_cast<unsigned>(0), -2, -2, ' ',
                                          true});
                 }
             }
@@ -1096,8 +1096,8 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[0][4], static_cast<unsigned int>(0), static_cast<unsigned int>(4),
-                                         static_cast<unsigned int>(0), static_cast<unsigned int>(7), -2, -2, ' ',
+                        moves.push_back({&pieces[0][4], static_cast<unsigned>(0), static_cast<unsigned>(4),
+                                         static_cast<unsigned>(0), static_cast<unsigned>(7), -2, -2, ' ',
                                          true});
                 }
             }
@@ -1124,8 +1124,8 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[0][4], static_cast<unsigned int>(0), static_cast<unsigned int>(4),
-                                         static_cast<unsigned int>(0), static_cast<unsigned int>(0), -2, -2, ' ',
+                        moves.push_back({&pieces[0][4], static_cast<unsigned>(0), static_cast<unsigned>(4),
+                                         static_cast<unsigned>(0), static_cast<unsigned>(0), -2, -2, ' ',
                                          true});
                 }
             }
@@ -1218,12 +1218,12 @@ struct board {
         if (moves.size() == 0) {
             // cout << "0 moves!" << endl;
             if (kingIsInCheck)
-                moves.push_back({&emptypiece, static_cast<unsigned int>(0), static_cast<unsigned int>(0),
-                                 static_cast<unsigned int>(0), static_cast<unsigned int>(0)});
+                moves.push_back({&emptypiece, static_cast<unsigned>(0), static_cast<unsigned>(0),
+                                 static_cast<unsigned>(0), static_cast<unsigned>(0)});
             else
-                moves.push_back({&pieces[kingrow][kingcol], static_cast<unsigned int>(kingrow),
-                                 static_cast<unsigned int>(kingcol), static_cast<unsigned int>(kingrow),
-                                 static_cast<unsigned int>(kingcol)});
+                moves.push_back({&pieces[kingrow][kingcol], static_cast<unsigned>(kingrow),
+                                 static_cast<unsigned>(kingcol), static_cast<unsigned>(kingrow),
+                                 static_cast<unsigned>(kingcol)});
         }
 
         for (Move &move : moves) {
