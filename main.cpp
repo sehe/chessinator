@@ -1404,61 +1404,33 @@ struct board {
         return -1;
     };
 
-    ::move findMoveDepth(int depth, atomic<int> &counter, int x, int y) {
-        bool iamoriginal = counter == 0;
+    struct move findMoveDepth(int depth, atomic<int> &counter, int x, int y) {
+        bool toplevel = counter == 0;
 
         // list moves
         vector<::move> moves = possibleMoves();
 
         // wait for all threads to finish
-        if (iamoriginal) {
-            vector<tuple<thread *, board *>> threads;
-            // for (::move &move : moves) {
-            for (int i = 0; i < moves.size(); i++) {
-                // if (stillMates(moves[i])) {
-                //     moves[i].eval = 696970;
-                //     // moves[i].eval = 0;
-                //     // continue;
-                // }
-
-                // if (!(moves[i].fromcol == 0 && moves[i].fromrow == 5 && moves[i].tocol == 1 && moves[i].torow == 3))
-                //     continue;
-
-                // cout << moves[i].fromcol << moves[i].fromrow << moves[i].tocol << moves[i].torow << endl;
-
+        if (toplevel) {
+            vector<jthread> tasks;
+            tasks.reserve(moves.size());
+            for (auto &move : moves) {
                 counter++;
+                tasks.emplace_back([boardc = *this, &move, depth, &counter]() mutable {
+                  boardc.move(move);
+                  boardc.toggleWhoseToMove();
 
-                board *boardb = new board(*this);
+                  int e = boardc.eEval();
+                  if (e != -1) {
+                    move.eval = e;
+                    return;
+                  }
 
-                thread *t = new thread{([boardb, i, &moves, depth, &counter]() {
-                    ::move &move = moves[i];
-
-                    board &boardc = *boardb;
-                    boardc.move(move);
-                    boardc.toggleWhoseToMove();
-
-                    int e = boardc.eEval();
-                    if (e != -1) {
-                        moves[i].eval = e;
-                        return;
-                    }
-
-                    ::move oe = boardc.findMoveDepth(depth - 1, counter, 0, 0);
-                    if (oe.eval != 696969)
-                        moves[i].eval = oe.eval;
-                })};
-
-                threads.push_back({t, boardb});
+                  ::move oe = boardc.findMoveDepth(depth - 1, counter, 0, 0);
+                  if (oe.eval != 696969)
+                    move.eval = oe.eval;
+                });
             }
-
-            // cout << endl << threads.size() << endl;
-            for (tuple<thread *, board *> t : threads) {
-                if (get<0>(t)->joinable())
-                    get<0>(t)->join();
-            }
-
-            // desctruct everything properly
-            // for every new a delete
         } else {
             // for every move, think of opponent response
             for (::move &move : moves) {
@@ -1497,7 +1469,7 @@ struct board {
             return {.eval = 696969};
         }
 
-        if (iamoriginal) {
+        if (toplevel) {
             printMoveList(moves);
 
             int h = 0;
