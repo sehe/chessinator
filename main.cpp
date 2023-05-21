@@ -49,7 +49,7 @@ std::map<char, std::string> piecesmap = {
 
 struct Move {
     constexpr Move(Piece const* piece = &emptypiece, Coord from = {}, Coord to = {}, Coord ep = {-2, -2},
-         char promotion = ' ', bool castling = false, bool attacking = false, Coord fap = {-2, -2},
+         char promotion = ' ', bool castling = false, bool attacking = true, Coord fap = {-2, -2},
          int eval = 0)
         : piece(piece)
         , fromrow(from.row)
@@ -65,8 +65,8 @@ struct Move {
         , eval(eval) {}
 
     // TODO REMOVE legacy
-    constexpr Move(Piece const* piece, Coord from, int torow, int tocol, int eprow = -1, int epcol = -1,
-                   char promotion = ' ', bool castling = false, bool attacking = false, Coord fap = {-2, -2},
+    constexpr Move(Piece const* piece, Coord from, int torow, int tocol, int eprow = -2, int epcol = -2,
+                   char promotion = ' ', bool castling = false, bool attacking = true, Coord fap = {-2, -2},
                    int eval = 0)
         : piece(piece)
         , fromrow(from.row)
