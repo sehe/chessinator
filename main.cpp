@@ -20,13 +20,9 @@
 
 using namespace std::chrono_literals;
 
-namespace { // temporary refactor utilities
-    constexpr auto ui = [](auto v) constexpr { return static_cast<unsigned>(v); };
-}
-
 // using Coord = std::tuple<int, int>;
 struct Coord {
-    int row = -2, col = -2;
+    int row = -2, col = -2; // TODO 4-bits
     explicit operator bool() const { return row != -2; }
     auto operator<=>(Coord const &) const = default;
 };
@@ -48,15 +44,38 @@ std::map<char, std::string> piecesmap = {
 };
 
 struct Move {
+    constexpr Move(Piece const* piece = &emptypiece, Coord from = {}, Coord to = {}, Coord ep = {-2, -2},
+         char promotion = ' ', bool castling = false, bool attacking = false, Coord fap = {-2, -2},
+         int eval = 0)
+        : piece(piece)
+        , fromrow(from.row)
+        , fromcol(from.col)
+        , torow(to.row)
+        , tocol(to.col)
+        , enpassantrow(ep.row)
+        , enpassantcol(ep.col)
+        , promotion(promotion)
+        , castling(castling)
+        , attacking(attacking)
+        , fap(fap)
+        , eval(eval) {}
 
-    /*
-     * Move() = default;
-     * explicit Move(Coord from, Coord to, Coord fap = {-2, -2})
-     *    : fromrow(from.row), fromcol(from.col), //
-     *      torow(to.row), tocol(to.col),         //
-     *      fap(fap) {}
-     */
-
+    // TODO REMOVE legacy
+    constexpr Move(Piece const* piece, Coord from, int torow, int tocol, int eprow = -1, int epcol = -1,
+                   char promotion = ' ', bool castling = false, bool attacking = false, Coord fap = {-2, -2},
+                   int eval = 0)
+        : piece(piece)
+        , fromrow(from.row)
+        , fromcol(from.col)
+        , torow(torow)
+        , tocol(tocol)
+        , enpassantrow(eprow)
+        , enpassantcol(epcol)
+        , promotion(promotion)
+        , castling(castling)
+        , attacking(attacking)
+        , fap(fap)
+        , eval(eval) {}
     Piece const *piece;
     unsigned fromrow : 3;
     unsigned fromcol : 3;
@@ -77,6 +96,21 @@ struct Move {
 
     int eval = 0;
 };
+
+constexpr static Move makeFap(                            //
+    Piece const* piece = &emptypiece, Coord from = {},    //
+    int torow = -2, int tocol = -2, Coord fap = {-2, -2}) //
+{
+    Move m(piece, from, torow, tocol);
+    m.fap = fap;
+    return m;
+}
+
+constexpr static Move makeEvalOnly(int eval) {
+    Move m;
+    m.eval = eval;
+    return m;
+}
 
 struct board {
     Piece pieces[8][8]{
@@ -162,43 +196,34 @@ struct board {
         if (pieces[move[1] - '1'][move[0] - 'a'].piece == 'k' &&
             (move == "e1h1" || move == "e1a1" || move == "e8h8" || move == "e8a8")) {
             // castling
-            cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
-                     ui(move[1] - '1'),
-                     ui(move[0] - 'a'),
-                     ui(move[3] - '1'),
-                     ui(move[2] - 'a'),
-                     -2,
-                     -2,
-                     ' ',
-                     true};
+            cmove = Move{&pieces[move[1] - '1'][move[0] - 'a'],
+                         {move[1] - '1', move[0] - 'a'},
+                         {move[3] - '1', move[2] - 'a'},
+                         {-2, -2},
+                         ' ',
+                         true};
         } else if (pieces[move[1] - '1'][move[0] - 'a'].piece == 'p' && move[0] != move[2] &&
                    pieces[move[3] - '1'][move[2] - 'a'].piece == ' ') { // (if capturing empty piece)
             // enpassant
-            cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
-                     ui(move[1] - '1'),
-                     ui(move[0] - 'a'),
-                     ui(move[3] - '1'),
-                     ui(move[2] - 'a'),
-                     move[3] - '1',
-                     move[2] - 'a',
-                     ' ',
-                     false};
+            cmove = Move{&pieces[move[1] - '1'][move[0] - 'a'],
+                         {move[1] - '1', move[0] - 'a'},
+                         {move[3] - '1', move[2] - 'a'},
+                         {move[3] - '1', move[2] - 'a'},
+                         ' ',
+                         false};
         } else if (move.length() == 5) {
             // promotion
             cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
-                     ui(move[1] - '1'),
-                     ui(move[0] - 'a'),
-                     ui(move[3] - '1'),
-                     ui(move[2] - 'a'),
-                     -2,
-                     -2,
+                     {move[1] - '1', move[0] - 'a'},
+                     {move[3] - '1', move[2] - 'a'},
+                     {-2, -2},
                      move[4],
                      false};
         } else {
             // if not any of the weird cases, just move the piece
-            cmove = {&pieces[move[1] - '1'][move[0] - 'a'], ui(move[1] - '1'),
-                     ui(move[0] - 'a'), ui(move[3] - '1'),
-                     ui(move[2] - 'a')};
+            cmove = {&pieces[move[1] - '1'][move[0] - 'a'],
+                     {move[1] - '1', move[0] - 'a'},
+                     {move[3] - '1', move[2] - 'a'}};
         }
 
         this->applyMove(cmove);
@@ -442,38 +467,26 @@ struct board {
                         if (rownumb - 1 > -1 && pieces[rownumb - 1][colnumb].color[0] == 0) {
                             if (rownumb - 1 == 0) {
                                 // promotion
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb), -2, -2, 'q', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb - 1, colnumb, -2, -2, 'q', false, false});
 
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb), -2, -2, 'n', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb - 1, colnumb, -2, -2, 'n', false, false});
 
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb), -2, -2, 'b', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb - 1, colnumb, -2, -2, 'b', false, false});
 
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb), -2, -2, 'r', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb - 1, colnumb, -2, -2, 'r', false, false});
                             } else {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb - 1, colnumb, -2, -2, ' ', false, false});
                             }
 
                             // 2 forward, but only if on starting row & not going through another piece
                             if (rownumb == 6 && rownumb - 2 > -1 && pieces[rownumb - 2][colnumb].color[0] == 0) {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 2),
-                                                 ui(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb - 2, colnumb, -2, -2, ' ', false, false});
                             }
                         };
 
@@ -484,29 +497,12 @@ struct board {
                              imo)) {
                             if (rownumb - 1 == 0) {
                                 // promotion
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb - 1), -2, -2, 'q', false});
-
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb - 1), -2, -2, 'n', false});
-
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb - 1), -2, -2, 'b', false});
-
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb - 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb - 1, -2, -2, 'q', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb - 1, -2, -2, 'n', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb - 1, -2, -2, 'b', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb - 1, -2, -2, 'r', false});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb - 1), ui(colnumb - 1)});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb - 1});
                             }
                         }
                         if (rownumb - 1 > -1 && colnumb + 1 < 8 &&
@@ -515,37 +511,18 @@ struct board {
                              imo)) {
                             if (rownumb - 1 == 0) {
                                 // promotion
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb + 1), -2, -2, 'q', false});
-
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb + 1), -2, -2, 'n', false});
-
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb + 1), -2, -2, 'b', false});
-
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb - 1),
-                                                 ui(colnumb + 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb + 1, -2, -2, 'q', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb + 1, -2, -2, 'n', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb + 1, -2, -2, 'b', false});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb + 1, -2, -2, 'r', false});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb - 1), ui(colnumb + 1)});
+                                moves.push_back({&piece, from, rownumb - 1, colnumb + 1});
                             }
                         }
 
                         // en passant
                         if (rownumb == 3 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(2),
-                                             ui(enpassant[0]), 2, enpassant[0]});
+                            moves.push_back({&piece, from, 2, enpassant[0], 2, enpassant[0]});
                         }
                     } else {
                         // white
@@ -554,38 +531,26 @@ struct board {
                         if (rownumb + 1 < 8 && pieces[rownumb + 1][colnumb].color[0] == 0) {
                             if (rownumb + 1 == 7) {
                                 // promotion
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb), -2, -2, 'q', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb + 1, colnumb, -2, -2, 'q', false, false});
 
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb), -2, -2, 'n', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb + 1, colnumb, -2, -2, 'n', false, false});
 
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb), -2, -2, 'b', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb + 1, colnumb, -2, -2, 'b', false, false});
 
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb), -2, -2, 'r', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb + 1, colnumb, -2, -2, 'r', false, false});
                             } else {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb + 1, colnumb, -2, -2, ' ', false, false});
                             }
 
                             // 2 forward, but only if on starting row & not going through another piece
                             if (rownumb == 1 && rownumb + 2 < 8 && pieces[rownumb + 2][colnumb].color[0] == 0) {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 2),
-                                                 ui(colnumb), -2, -2, ' ', false, false});
+                                moves.push_back(
+                                    {&piece, from, rownumb + 2, colnumb, -2, -2, ' ', false, false});
                             }
                         };
 
@@ -597,26 +562,12 @@ struct board {
                             // left
                             if (rownumb == 6) {
                                 // promotion
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb - 1), -2, -2, 'q', false});
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb - 1), -2, -2, 'n', false});
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb - 1), -2, -2, 'b', false});
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb - 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb - 1, -2, -2, 'q', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb - 1, -2, -2, 'n', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb - 1, -2, -2, 'b', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb - 1, -2, -2, 'r', false});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb + 1), ui(colnumb - 1)});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb - 1});
                             }
                         };
                         if (rownumb + 1 < 8 && colnumb + 1 < 8 &&
@@ -626,34 +577,18 @@ struct board {
                             // right
                             if (rownumb == 6) {
                                 // promotion
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb + 1), -2, -2, 'q', false});
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb + 1), -2, -2, 'n', false});
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb + 1), -2, -2, 'b', false});
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb),
-                                                 ui(rownumb + 1),
-                                                 ui(colnumb + 1), -2, -2, 'r', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb + 1, -2, -2, 'q', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb + 1, -2, -2, 'n', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb + 1, -2, -2, 'b', false});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb + 1, -2, -2, 'r', false});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb + 1), ui(colnumb + 1)});
+                                moves.push_back({&piece, from, rownumb + 1, colnumb + 1});
                             };
                         };
 
                         // en passant
                         if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(5),
-                                             ui(enpassant[0]), 5, enpassant[0]});
+                            moves.push_back({&piece, from, 5, enpassant[0], 5, enpassant[0]});
                         }
                     }
                     break;
@@ -670,13 +605,9 @@ struct board {
                     for (int i = colnumb - 1; i > -1; i--) {
                         if (imo) {
                             if (pieces[rownumb][i].color == 0b00) {
-                                moves.push_back(Move{&piece, ui(rownumb),
-                                                 ui(colnumb), ui(rownumb),
-                                                 ui(i)});
+                                moves.push_back(Move{&piece, from, rownumb, i});
                             } else {
-                                moves.push_back(Move{&piece, ui(rownumb),
-                                                 ui(colnumb), ui(rownumb),
-                                                 ui(i), .fap = {rownumb, i}});
+                                moves.push_back(makeFap(&piece, from, rownumb, i, {rownumb, i}));
 
                                 if (pieces[rownumb][i].piece != 'k')
                                     break;
@@ -686,9 +617,7 @@ struct board {
                                 pieces[rownumb][i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(rownumb),
-                                             ui(i)});
+                            moves.push_back({&piece, from, rownumb, i});
 
                             if (pieces[rownumb][i].color[0] == 0b1)
                                 break;
@@ -702,13 +631,9 @@ struct board {
                     for (int i = colnumb + 1; i < 8; i++) {
                         if (imo) {
                             if (pieces[rownumb][i].color == 0b00) {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb), ui(rownumb),
-                                                 ui(i)});
+                                moves.push_back({&piece, from, rownumb, i});
                             } else {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb), ui(rownumb),
-                                                 ui(i), .fap = {rownumb, i}});
+                                moves.push_back(makeFap(&piece, from, rownumb, i, {rownumb, i}));
 
                                 if (pieces[rownumb][i].piece != 'k')
                                     break;
@@ -718,9 +643,7 @@ struct board {
                                 pieces[rownumb][i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(rownumb),
-                                             ui(i)});
+                            moves.push_back({&piece, from, rownumb, i});
 
                             if (pieces[rownumb][i].color[0] == 0b1)
                                 break;
@@ -734,13 +657,9 @@ struct board {
                     for (int i = rownumb + 1; i < 8; i++) {
                         if (imo) {
                             if (pieces[i][colnumb].color == 0b00) {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb), ui(i),
-                                                 ui(colnumb)});
+                                moves.push_back({&piece, from, i, colnumb});
                             } else {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb), ui(i),
-                                                 ui(colnumb), .fap = {i, colnumb}});
+                                moves.push_back(makeFap(&piece, from, i, colnumb, {i, colnumb}));
 
                                 if (pieces[i][colnumb].piece != 'k')
                                     break;
@@ -750,9 +669,7 @@ struct board {
                                 pieces[i][colnumb].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(i),
-                                             ui(colnumb)});
+                            moves.push_back({&piece, from, i, colnumb});
 
                             if (pieces[i][colnumb].color[0] == 0b1)
                                 break;
@@ -766,25 +683,19 @@ struct board {
                     for (int i = rownumb - 1; i > -1; i--) {
                         if (imo) {
                             if (pieces[i][colnumb].color == 0b00) {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb), ui(i),
-                                                 ui(colnumb)});
+                                moves.push_back({&piece, from, i, colnumb});
                             } else {
-                                moves.push_back({&piece, ui(rownumb),
-                                                 ui(colnumb), ui(i),
-                                                 ui(colnumb), .fap = {i, colnumb}});
+                                moves.push_back(makeFap(&piece, from, i, colnumb, {i, colnumb}));
 
                                 if (pieces[i][colnumb].piece != 'k')
                                     break;
                             }
                         } else {
                             if (pieces[i][colnumb].color[0] == 0b1 /* kenobi */ &&
-                                pieces[i][colnumb].color[1] == piece.color[1])
+                                    pieces[i][colnumb].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(i),
-                                             ui(colnumb)});
+                            moves.push_back({&piece, from, i, colnumb});
 
                             if (pieces[i][colnumb].color[0] == 0b1)
                                 break;
@@ -804,14 +715,10 @@ struct board {
                     for (int i = 1; i <= std::min(7 - rownumb, colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb + i][colnumb - i].color == 0b00) {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb + i), ui(colnumb - i)});
+                                moves.push_back({&piece, from, rownumb + i, colnumb - i});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb + i), ui(colnumb - i),
-                                     .fap = {rownumb + i, colnumb - i}});
+                                moves.push_back(makeFap(&piece, from, rownumb + i, colnumb - i,
+                                                        {rownumb + i, colnumb - i}));
 
                                 if (pieces[rownumb + i][colnumb - i].piece != 'k')
                                     break;
@@ -821,9 +728,7 @@ struct board {
                                 pieces[rownumb + i][colnumb - i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(rownumb + i),
-                                             ui(colnumb - i)});
+                            moves.push_back({&piece, from, rownumb + i, colnumb - i});
 
                             if (pieces[rownumb + i][colnumb - i].color[0] == 0b1)
                                 break;
@@ -837,14 +742,10 @@ struct board {
                     for (int i = 1; i <= std::min(rownumb, colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb - i][colnumb - i].color == 0b00) {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb - i), ui(colnumb - i)});
+                                moves.push_back({&piece, from, rownumb - i, colnumb - i});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb - i), ui(colnumb - i),
-                                     .fap = {rownumb - i, colnumb - i}});
+                                moves.push_back(makeFap(&piece, from, rownumb - i, colnumb - i,
+                                                        {rownumb - i, colnumb - i}));
 
                                 if (pieces[rownumb - i][colnumb - i].piece != 'k')
                                     break;
@@ -854,9 +755,7 @@ struct board {
                                 pieces[rownumb - i][colnumb - i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(rownumb - i),
-                                             ui(colnumb - i)});
+                            moves.push_back({&piece, from, rownumb - i, colnumb - i});
 
                             if (pieces[rownumb - i][colnumb - i].color[0] == 0b1)
                                 break;
@@ -870,14 +769,10 @@ struct board {
                     for (int i = 1; i <= std::min(7 - rownumb, 7 - colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb + i][colnumb + i].color == 0b00) {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb + i), ui(colnumb + i)});
+                                moves.push_back({&piece, from, rownumb + i, colnumb + i});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb + i), ui(colnumb + i),
-                                     .fap = {rownumb + i, colnumb + i}});
+                                moves.push_back(makeFap(&piece, from, rownumb + i, colnumb + i,
+                                                        {rownumb + i, colnumb + i}));
 
                                 if (pieces[rownumb + i][colnumb + i].piece != 'k')
                                     break;
@@ -887,9 +782,7 @@ struct board {
                                 pieces[rownumb + i][colnumb + i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(rownumb + i),
-                                             ui(colnumb + i)});
+                            moves.push_back({&piece, from, rownumb + i, colnumb + i});
 
                             if (pieces[rownumb + i][colnumb + i].color[0] == 0b1)
                                 break;
@@ -903,14 +796,10 @@ struct board {
                     for (int i = 1; i <= std::min(rownumb, 7 - colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb - i][colnumb + i].color == 0b00) {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb - i), ui(colnumb + i)});
+                                moves.push_back({&piece, from, rownumb - i, colnumb + i});
                             } else {
-                                moves.push_back(
-                                    {&piece, ui(rownumb), ui(colnumb),
-                                     ui(rownumb - i), ui(colnumb + i),
-                                     .fap = {rownumb - i, colnumb + i}});
+                                moves.push_back(makeFap(&piece, from, rownumb - i, colnumb + i,
+                                                        {rownumb - i, colnumb + i}));
 
                                 if (pieces[rownumb - i][colnumb + i].piece != 'k')
                                     break;
@@ -920,9 +809,7 @@ struct board {
                                 pieces[rownumb - i][colnumb + i].color[1] == piece.color[1])
                                 break;
 
-                            moves.push_back({&piece, ui(rownumb),
-                                             ui(colnumb), ui(rownumb - i),
-                                             ui(colnumb + i)});
+                            moves.push_back({&piece, from, rownumb - i, colnumb + i});
 
                             if (pieces[rownumb - i][colnumb + i].color[0] == 0b1)
                                 break;
@@ -941,9 +828,7 @@ struct board {
                     if (rownumb + 2 < 8 && colnumb - 1 > -1 &&
                         (pieces[rownumb + 2][colnumb - 1].color[0] == 0b0 ||
                          pieces[rownumb + 2][colnumb - 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb + 2),
-                                         ui(colnumb - 1)});
+                        moves.push_back({&piece, from, rownumb + 2, colnumb - 1});
 
                     //  _   (rownumb + 2, colnumb + 1)
                     // |
@@ -951,35 +836,27 @@ struct board {
                     if (rownumb + 2 < 8 && colnumb + 1 < 8 &&
                         (pieces[rownumb + 2][colnumb + 1].color[0] == 0b0 ||
                          pieces[rownumb + 2][colnumb + 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb + 2),
-                                         ui(colnumb + 1)});
+                        moves.push_back({&piece, from, rownumb + 2, colnumb + 1});
 
                     // |__ (colnumb - 2, rownumb + 1)
                     if (colnumb - 2 > -1 && rownumb + 1 < 8 &&
                         (pieces[rownumb + 1][colnumb - 2].color[0] == 0b0 ||
                          pieces[rownumb + 1][colnumb - 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb + 1),
-                                         ui(colnumb - 2)});
+                        moves.push_back({&piece, from, rownumb + 1, colnumb - 2});
 
                     //  __ (colnumb - 2, rownumb - 1)
                     // |
                     if (colnumb - 2 > -1 && rownumb - 1 > -1 &&
                         (pieces[rownumb - 1][colnumb - 2].color[0] == 0b0 ||
                          pieces[rownumb - 1][colnumb - 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb - 1),
-                                         ui(colnumb - 2)});
+                        moves.push_back({&piece, from, rownumb - 1, colnumb - 2});
 
                     // |
                     // |__ (colnumb + 1, rownumb - 2)
                     if (colnumb + 1 < 8 && rownumb - 2 > -1 &&
                         (pieces[rownumb - 2][colnumb + 1].color[0] == 0b0 ||
                          pieces[rownumb - 2][colnumb + 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb - 2),
-                                         ui(colnumb + 1)});
+                        moves.push_back({&piece, from, rownumb - 2, colnumb + 1});
 
                     // |
                     // |
@@ -987,26 +864,20 @@ struct board {
                     if (colnumb - 1 > -1 && rownumb - 2 > -1 &&
                         (pieces[rownumb - 2][colnumb - 1].color[0] == 0b0 ||
                          pieces[rownumb - 2][colnumb - 1].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb - 2),
-                                         ui(colnumb - 1)});
+                        moves.push_back({&piece, from, rownumb - 2, colnumb - 1});
 
                     // __| (colnumb + 2, rownumb + 1)
                     if (colnumb + 2 < 8 && rownumb + 1 < 8 &&
                         (pieces[rownumb + 1][colnumb + 2].color[0] == 0b0 ||
                          pieces[rownumb + 1][colnumb + 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb + 1),
-                                         ui(colnumb + 2)});
+                        moves.push_back({&piece, from, rownumb + 1, colnumb + 2});
 
                     // __
                     //   | (colnumb + 2, rownumb - 1)
                     if (colnumb + 2 < 8 && rownumb - 1 > -1 &&
                         (pieces[rownumb - 1][colnumb + 2].color[0] == 0b0 ||
                          pieces[rownumb - 1][colnumb + 2].color[1] != piece.color[1] || imo))
-                        moves.push_back({&piece, ui(rownumb), ui(colnumb),
-                                         ui(rownumb - 1),
-                                         ui(colnumb + 2)});
+                        moves.push_back({&piece, from, rownumb - 1, colnumb + 2});
                     break;
                 }
                 }
@@ -1042,9 +913,7 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[7][4], ui(7), ui(4),
-                                         ui(7), ui(7), -2, -2, ' ',
-                                         true});
+                        moves.push_back({&pieces[7][4], {7, 4}, 7, 7, -2, -2, ' ', true});
                 }
             }
             if (castling[3]) {
@@ -1070,9 +939,7 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[7][4], ui(7), ui(4),
-                                         ui(7), ui(0), -2, -2, ' ',
-                                         true});
+                        moves.push_back({&pieces[7][4], {7, 4}, 7, 0, -2, -2, ' ', true});
                 }
             }
         } else {
@@ -1100,9 +967,7 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[0][4], ui(0), ui(4),
-                                         ui(0), ui(7), -2, -2, ' ',
-                                         true});
+                        moves.push_back({&pieces[0][4], {0, 4}, 0, 7, -2, -2, ' ', true});
                 }
             }
             if (castling[1]) {
@@ -1128,9 +993,7 @@ struct board {
                     }
 
                     if (isLegal)
-                        moves.push_back({&pieces[0][4], ui(0), ui(4),
-                                         ui(0), ui(0), -2, -2, ' ',
-                                         true});
+                        moves.push_back({&pieces[0][4], {0, 4}, 0, 0, -2, -2, ' ', true});
                 }
             }
         }
@@ -1222,12 +1085,9 @@ struct board {
         if (moves.size() == 0) {
             // cout << "0 moves!" << endl;
             if (kingIsInCheck)
-                moves.push_back({&emptypiece, ui(0), ui(0),
-                                 ui(0), ui(0)});
+                moves.push_back({&emptypiece, {0, 0}, 0, 0});
             else
-                moves.push_back({&pieces[kingrow][kingcol], ui(kingrow),
-                                 ui(kingcol), ui(kingrow),
-                                 ui(kingcol)});
+                moves.push_back({&pieces[kingrow][kingcol], {kingrow, kingcol}, kingrow, kingcol});
         }
 
         for (Move &move : moves) {
@@ -1484,11 +1344,11 @@ struct board {
         // sort moves by eval
         sort(
             moves.begin(), moves.end(),
-            whoami == whosetomove ? [](const Move &a, const Move &b) { return a.eval > b.eval; }
-                                  : [](const Move &a, const Move &b) { return a.eval < b.eval; });
+            whoami == whosetomove ? [](Move const& a, Move const& b) { return a.eval > b.eval; }
+                                  : [](Move const& a, Move const& b) { return a.eval < b.eval; });
 
         if (moves.size() == 0) {
-            return {.eval = 696969};
+            return makeEvalOnly(696969);
         }
 
         if (toplevel) {
@@ -1586,7 +1446,7 @@ int main(int argc, char *argv[]) {
         // board.draw();
         // exit(EXIT_SUCCESS);
     } else {
-        board.actuallyMove({&board.pieces[1][4], 1, 4, 3, 4, -2, -2, ' ', false, false, {-2, -2}, 0});
+        board.actuallyMove({&board.pieces[1][4], {1, 4}, 3, 4, -2, -2, ' ', false, false, {-2, -2}, 0});
         board.draw();
     }
 
