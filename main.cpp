@@ -28,12 +28,12 @@ struct Coord {
 };
 using Selection = std::set<Coord>;
 
-struct piece {
+struct Piece {
     std::bitset<2> color;
     char piece;
     int worth;
 };
-piece emptypiece = {0b00, ' ', 0};
+constexpr Piece emptypiece = {0b00, ' ', 0};
 
 std::map<char, std::string> piecesmap = {
     {'r', "♖"}, {'n', "♘"}, {'b', "♗"}, {'q', "♕"}, {'k', "♔"}, {'p', "♙"},
@@ -43,8 +43,17 @@ std::map<char, std::string> piecesmap = {
     {' ', " "},
 };
 
-struct move {
-    piece *piece;
+struct Move {
+
+    /*
+     * Move() = default;
+     * explicit Move(Coord from, Coord to, Coord fap = {-2, -2})
+     *    : fromrow(from.row), fromcol(from.col), //
+     *      torow(to.row), tocol(to.col),         //
+     *      fap(fap) {}
+     */
+
+    Piece const *piece;
     unsigned int fromrow : 3;
     unsigned int fromcol : 3;
 
@@ -66,7 +75,7 @@ struct move {
 };
 
 struct board {
-    piece pieces[8][8]{
+    Piece pieces[8][8]{
         {{0b01, 'r', 500},
          {0b01, 'n', 300},
          {0b01, 'b', 300},
@@ -143,8 +152,8 @@ struct board {
 
     int enpassant[2]{-2, -2};
 
-    void move(std::string const &move) {
-        ::move cmove;
+    void applyMove(std::string const &move) {
+        Move cmove;
 
         if (pieces[move[1] - '1'][move[0] - 'a'].piece == 'k' &&
             (move == "e1h1" || move == "e1a1" || move == "e8h8" || move == "e8a8")) {
@@ -188,10 +197,10 @@ struct board {
                      static_cast<unsigned int>(move[2] - 'a')};
         }
 
-        this->move(cmove);
+        this->applyMove(cmove);
     }
 
-    void move(::move const &move) {
+    void applyMove(Move const &move) {
         // auto revoke enpassantability
         enpassant[0] = -2;
         enpassant[1] = -2;
@@ -291,7 +300,7 @@ struct board {
         //      << (char)(move.tocol + 'a') << (char)(move.torow + '1') << endl;
     }
 
-    void actuallyMove(::move const &move) {
+    void actuallyMove(Move const &move) {
         std::cout << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << (char)(move.tocol + 'a')
              << (char)(move.torow + '1');
 
@@ -299,7 +308,7 @@ struct board {
             std::cout << (char)toupper(move.promotion);
         }
 
-        this->move(move);
+        this->applyMove(move);
         toggleWhoseToMove();
 
         std::cout << std::endl;
@@ -323,7 +332,7 @@ struct board {
                 std::string numbs[8] = {"\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17", "\uFF18"};
                 std::cerr << "\x1B[49m" << numbs[7 - i];
                 for (int k = 0; k < 8; ++k) {
-                    piece &piece = pieces[7 - i][k];
+                    Piece &piece = pieces[7 - i][k];
                     std::cerr << ((i % 2 ? !(k % 2) : (k % 2)) ? "\x1B[40m" : "\x1B[100m")                      // color
                               << piecesmap[(char)(piece.color[1] ? piece.piece : toupper(piece.piece))] << " "; // piece
                 }
@@ -347,8 +356,8 @@ struct board {
 
         // for (piece(&row)[8] : pieces) {
         for (int i = 0; i < 8; i++) {
-            piece(&row)[8] = pieces[7 - i];
-            for (piece &piece : row) {
+            Piece(&row)[8] = pieces[7 - i];
+            for (Piece &piece : row) {
                 std::cout << state.fenpos << " " << state.empty << std::endl;
                 if (piece.color[0] == 0) {
                     state.empty++;
@@ -391,26 +400,29 @@ struct board {
         return fen;
     };
 
-    std::vector<::move> possibleMoves(std::optional<Selection> const& selectPieces = std::nullopt) {
-        std::vector<::move> movesm;
-        std::vector<::move> moveso;
+    std::vector<Move> possibleMoves(std::optional<Selection> const& selectPieces = std::nullopt) {
+        std::vector<Move> movesm;
+        std::vector<Move> moveso;
         int kingrow = -2;
         int kingcol = -2;
 
         // normal piece movement
         for (int rownumb = 0; rownumb < 8; ++rownumb) {
-            piece(&row)[8] = pieces[rownumb];
+            auto /*const*/ &row = pieces[rownumb];
+
             for (int colnumb = 0; colnumb < 8; ++colnumb) {
+                Coord const from{rownumb, colnumb};
+
                 if (selectPieces && !selectPieces->contains({rownumb, colnumb}))
                     continue;
 
-                piece &piece = row[colnumb];
+                Piece /*const*/ &piece = row[colnumb];
 
                 // cout << whosetomove << endl;
                 if (piece.color[0] == 0)
                     continue;
 
-                std::vector<::move> &moves = (piece.color[1] != whosetomove) ? moveso : movesm;
+                std::vector<Move> &moves = (piece.color[1] != whosetomove) ? moveso : movesm;
                 bool imo = piece.color[1] != whosetomove;
                 // bool imo = false;
 
@@ -654,11 +666,11 @@ struct board {
                     for (int i = colnumb - 1; i > -1; i--) {
                         if (imo) {
                             if (pieces[rownumb][i].color == 0b00) {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                moves.push_back(Move{&piece, static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(i)});
                             } else {
-                                moves.push_back({&piece, static_cast<unsigned int>(rownumb),
+                                moves.push_back(Move{&piece, static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(i), .fap = {rownumb, i}});
 
@@ -999,7 +1011,7 @@ struct board {
         if (selectPieces)
             return moveso;
 
-        std::vector<::move> &moves = movesm;
+        std::vector<Move> &moves = movesm;
         // castling
         if (whosetomove) {
             // black
@@ -1010,7 +1022,7 @@ struct board {
 
                     // check if moves in between are legal
                     bool isLegal = true;
-                    for (::move &move : moveso) {
+                    for (Move &move : moveso) {
                         if (move.torow == 7 && move.tocol == 4) {
                             isLegal = false;
                             break;
@@ -1038,7 +1050,7 @@ struct board {
 
                     // check if moves in between are legal
                     bool isLegal = true;
-                    for (::move &move : moveso) {
+                    for (Move &move : moveso) {
                         if (move.torow == 7 && move.tocol == 4) {
                             isLegal = false;
                             break;
@@ -1068,7 +1080,7 @@ struct board {
 
                     // check if moves in between are legal
                     bool isLegal = true;
-                    for (::move &move : moveso) {
+                    for (Move &move : moveso) {
                         if (move.torow == 0 && move.tocol == 4) {
                             isLegal = false;
                             break;
@@ -1096,7 +1108,7 @@ struct board {
 
                     // check if moves in between are legal
                     bool isLegal = true;
-                    for (::move &move : moveso) {
+                    for (Move &move : moveso) {
                         if (move.torow == 0 && move.tocol == 4) {
                             isLegal = false;
                             break;
@@ -1123,7 +1135,7 @@ struct board {
         bool kingIsInCheck = false;
         Selection toselectPieces;
         if (kingcol != -2) {
-            for (::move &move : moveso) {
+            for (Move &move : moveso) {
                 if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
                     toselectPieces.insert({move.fromrow, move.fromcol});
 
@@ -1133,11 +1145,11 @@ struct board {
             }
         }
 
-        auto it = remove_if(moves.begin(), moves.end(), [&](::move &move) {
+        auto it = remove_if(moves.begin(), moves.end(), [&](Move &move) {
             if (kingIsInCheck) {
                 if (move.piece->piece == 'k') {
                     bool isIllegal = false;
-                    for (::move &movea : moveso) {
+                    for (Move &movea : moveso) {
                         if (movea.attacking && movea.torow == move.torow && movea.tocol == move.tocol) {
                             isIllegal = true;
                             break;
@@ -1148,13 +1160,13 @@ struct board {
                 } else {
                     // make copy of board
                     board boardc = *this;
-                    boardc.move(move);
+                    boardc.applyMove(move);
 
-                    std::vector<::move> possibleMoves = boardc.possibleMoves(toselectPieces);
+                    std::vector<Move> possibleMoves = boardc.possibleMoves(toselectPieces);
 
                     bool isIllegal = false;
                     // cout << possibleMoves.size() << endl;
-                    for (::move &move : possibleMoves) {
+                    for (Move &move : possibleMoves) {
                         if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
                             isIllegal = true;
                             break;
@@ -1166,7 +1178,7 @@ struct board {
             } else {
                 if (move.piece->piece == 'k') {
                     bool isIllegal = false;
-                    for (::move &movea : moveso) {
+                    for (Move &movea : moveso) {
                         if (movea.attacking && movea.torow == move.torow && movea.tocol == move.tocol) {
                             isIllegal = true;
                             break;
@@ -1177,21 +1189,20 @@ struct board {
                 } else {
                     // make copy of board
                     board boardc = *this;
-                    boardc.move(move);
+                    boardc.applyMove(move);
 
-                    std::vector<Coord> fappers;
-                    for (::move &movea : moveso) {
-                        if (movea.fap == Coord{move.fromrow, move.fromcol}) {
-                            fappers.push_back({movea.fromrow, movea.fromcol});
-                        }
-                    }
+                    Selection fappers;
+                    for (Move &movea : moveso)
+                        if (movea.fap == Coord{move.fromrow, move.fromcol})
+                            fappers.insert({movea.fromrow, movea.fromcol});
+
                     // cout << fappers.size() << endl;
 
-                    std::vector<::move> possibleMoves = boardc.possibleMoves(fappers, true);
+                    std::vector<Move> possibleMoves = boardc.possibleMoves(fappers);
 
                     bool isIllegal = false;
                     // cout << possibleMoves.size() << endl << endl;
-                    for (::move &move : possibleMoves) {
+                    for (Move &move : possibleMoves) {
                         if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
                             isIllegal = true;
                             break;
@@ -1215,15 +1226,15 @@ struct board {
                                  static_cast<unsigned int>(kingcol)});
         }
 
-        for (::move &move : moves) {
+        for (Move &move : moves) {
             board boardc = *this;
-            boardc.move(move);
+            boardc.applyMove(move);
 
             // int eval = 0;
 
             // for every piece on the board
-            for (::piece(&row)[8] : boardc.pieces) {
-                for (::piece &piece : row) {
+            for (::Piece(&row)[8] : boardc.pieces) {
+                for (::Piece &piece : row) {
                     if (piece.color[1] == 0b1) {
                         // black
                         if (piece.piece == 'p') {
@@ -1282,8 +1293,8 @@ struct board {
 
     void loadfen(std::string fen) {
         // clear board
-        for (piece(&row)[8] : pieces) {
-            for (piece &piece : row) {
+        for (Piece(&row)[8] : pieces) {
+            for (Piece &piece : row) {
                 piece = emptypiece;
             }
         }
@@ -1369,9 +1380,9 @@ struct board {
         }
     }
 
-    void printMoveList(std::vector<::move> &moves) {
+    void printMoveList(std::vector<Move> &moves) {
         // return;
-        for (::move &move : moves) {
+        for (Move &move : moves) {
             // board.printMove(move);
             std::cerr
                 << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) : (char)toupper(move.piece->piece)]
@@ -1411,11 +1422,11 @@ struct board {
         return -1;
     };
 
-    struct move findMoveDepth(int depth, std::atomic<int> &counter, int x, int y) {
+    struct Move findMoveDepth(int depth, std::atomic<int> &counter, int x, int y) {
         bool toplevel = counter == 0;
 
         // list moves
-        std::vector<::move> moves = possibleMoves();
+        std::vector<Move> moves = possibleMoves();
 
         // wait for all threads to finish
         if (toplevel) {
@@ -1424,7 +1435,7 @@ struct board {
             for (auto &move : moves) {
                 counter++;
                 tasks.emplace_back([boardc = *this, &move, depth, &counter]() mutable {
-                  boardc.move(move);
+                  boardc.applyMove(move);
                   boardc.toggleWhoseToMove();
 
                   int e = boardc.eEval();
@@ -1433,14 +1444,14 @@ struct board {
                     return;
                   }
 
-                  ::move oe = boardc.findMoveDepth(depth - 1, counter, 0, 0);
+                  Move oe = boardc.findMoveDepth(depth - 1, counter, 0, 0);
                   if (oe.eval != 696969)
                     move.eval = oe.eval;
                 });
             }
         } else {
             // for every move, think of opponent response
-            for (::move &move : moves) {
+            for (Move &move : moves) {
                 int xx = x;
                 int yy = y;
 
@@ -1452,12 +1463,12 @@ struct board {
 
                 if (depth > 0 && xx <= 3 && yy <= 4) { // 5 12    3 8
                     board boardc = *this;
-                    boardc.move(move);
+                    boardc.applyMove(move);
                     counter++;
 
                     boardc.toggleWhoseToMove();
 
-                    ::move oe = boardc.findMoveDepth(depth - 1, counter, xx, yy);
+                    Move oe = boardc.findMoveDepth(depth - 1, counter, xx, yy);
 
                     if (oe.eval != 696969) {
                         move.eval = oe.eval;
@@ -1469,8 +1480,8 @@ struct board {
         // sort moves by eval
         sort(
             moves.begin(), moves.end(),
-            whoami == whosetomove ? [](const ::move &a, const ::move &b) { return a.eval > b.eval; }
-                                  : [](const ::move &a, const ::move &b) { return a.eval < b.eval; });
+            whoami == whosetomove ? [](const Move &a, const Move &b) { return a.eval > b.eval; }
+                                  : [](const Move &a, const Move &b) { return a.eval < b.eval; });
 
         if (moves.size() == 0) {
             return {.eval = 696969};
@@ -1480,7 +1491,7 @@ struct board {
             printMoveList(moves);
 
             int h = 0;
-            for (::move &move : moves) {
+            for (Move &move : moves) {
                 if (move.eval == moves[0].eval)
                     h++;
                 else
@@ -1513,7 +1524,7 @@ int main(int argc, char *argv[]) {
     //     std::atomic<int> counter = 0;
     //     auto start = now();
 
-    //     ::move bestMove = boardc.findMoveDepth(depth, counter, 0, 0);
+    //     Move bestMove = boardc.findMoveDepth(depth, counter, 0, 0);
     //     boardc.actuallyMove(bestMove);
     //     cerr << counter / ((now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
     //          << "(" << counter << " total)" << endl;
@@ -1563,7 +1574,7 @@ int main(int argc, char *argv[]) {
         // // board.toggleWhoseToMove();
         // board.draw();
 
-        // ::move bestMove = board.findMoveDepth(stupid ? 3 : 5, counter, 0, 0);
+        // Move bestMove = board.findMoveDepth(stupid ? 3 : 5, counter, 0, 0);
         // board.actuallyMove(bestMove);
         // cerr << counter / ((now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
         //      << "(" << counter << " total)" << endl;
@@ -1585,7 +1596,7 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        board.move(input_move);
+        board.applyMove(input_move);
         board.toggleWhoseToMove();
 
         // example with possibilities for pawns to go sideways, forward, promote (also capturing promotion),
@@ -1632,8 +1643,8 @@ int main(int argc, char *argv[]) {
 
         // board.move("a5b6");
 
-        // vector<::move> possibleMoves = board.possibleMoves();
-        // for (::move &move : possibleMoves) {
+        // vector<Move> possibleMoves = board.possibleMoves();
+        // for (Move &move : possibleMoves) {
         //     // board.printMove(move);
         //     cerr
         //         << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) :
@@ -1667,7 +1678,7 @@ int main(int argc, char *argv[]) {
         std::atomic<int> counter = 0;
         auto start = now();
 
-        ::move bestMove = board.findMoveDepth(depth, counter, 0, 0);
+        Move bestMove = board.findMoveDepth(depth, counter, 0, 0);
         board.actuallyMove(bestMove);
         std::cerr << counter / ((now() - start) / 1.0s) << "M positions per second" << std::endl
                   << "(" << counter << " total)" << std::endl;
