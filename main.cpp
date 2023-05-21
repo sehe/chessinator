@@ -3,6 +3,7 @@
 #include <bitset>
 #include <chrono>
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -22,11 +23,14 @@ using namespace std::chrono_literals;
 
 // using Coord = std::tuple<int, int>;
 struct Coord {
-    int row = -2, col = -2; // TODO 4-bits
+    constexpr Coord(int row = -2, int col = -2) : row(row), col(col) {}
+
+    int8_t row : 4, col : 4;
+
     explicit operator bool() const { return row != -2; }
     auto operator<=>(Coord const &) const = default;
 };
-using Selection = std::set<Coord>;
+using Selection = std::vector<Coord>;
 
 struct Piece {
     std::bitset<2> color;
@@ -442,7 +446,7 @@ struct board {
             for (int colnumb = 0; colnumb < 8; ++colnumb) {
                 Coord const from{rownumb, colnumb};
 
-                if (selectPieces && !selectPieces->contains({rownumb, colnumb}))
+                if (selectPieces && !count(begin(*selectPieces), end(*selectPieces), Coord{rownumb, colnumb}))
                     continue;
 
                 Piece /*const*/ &piece = row[colnumb];
@@ -598,6 +602,7 @@ struct board {
                         kingrow = rownumb;
                         kingcol = colnumb;
                     }
+                    [[fallthrough]];
                 }
                 case 'q':
                 case 'r': {
@@ -1004,7 +1009,7 @@ struct board {
         if (kingcol != -2) {
             for (Move &move : moveso) {
                 if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
-                    toselectPieces.insert({move.fromrow, move.fromcol});
+                    toselectPieces.emplace_back(0 + move.fromrow, 0 + move.fromcol);
 
                     kingIsInCheck = true;
                     // break;
@@ -1060,8 +1065,8 @@ struct board {
 
                     Selection fappers;
                     for (Move &movea : moveso)
-                        if (movea.fap == Coord{move.fromrow, move.fromcol})
-                            fappers.insert({movea.fromrow, movea.fromcol});
+                        if (movea.fap == Coord(move.fromrow, move.fromcol))
+                            fappers.emplace_back(0 + movea.fromrow, 0 + movea.fromcol);
 
                     // cout << fappers.size() << endl;
 
@@ -1544,7 +1549,8 @@ int main(int argc, char *argv[]) {
 
         Move bestMove = board.findMoveDepth(depth, counter, 0, 0);
         board.actuallyMove(bestMove);
-        std::cerr << counter / ((now() - start) / 1.0s) << "M positions per second" << std::endl
+        std::cerr << std::setprecision(2) << std::fixed;
+        std::cerr << counter / ((now() - start) / 1.0us) << "M positions per second" << std::endl
                   << "(" << counter << " total)" << std::endl;
 
         board.draw();
