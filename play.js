@@ -12,7 +12,7 @@ function play() {
     const isStupid = true;
 
     const sock = net.createConnection({
-        host: "192.168.50.225",
+        host: "localhost",
         port: 1337
     });
 

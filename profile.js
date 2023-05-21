@@ -8,28 +8,34 @@ const fs = require("fs");
 const lastEdit = fs.statSync(__filename).mtimeMs;
 
 function play() {
-    const isBlack = false;
+    const isBlack = true;
     const isStupid = true;
 
     const sock = net.createConnection({
         host: "localhost",
-        port: 1338
+        port: 1337
     });
 
-    const engine = spawn("./main.exe", isBlack ? isStupid ? ["--black", "--ultrastupid"] : ["--black"] : isStupid ? ["--ultrastupid"] : [], {
-        stdio: 'pipe',
-    });
+    var opts = ["--tool=callgrind", "--dump-instr=yes", "--collect-jumps=yes", "./main.exe"]
+    if (isBlack) {
+        opts.push("--black");
+    }
+    if (isStupid) {
+        opts.push("--ultrastupid");
+    }
+
+    const engine = spawn("/usr/local/bin/valgrind", opts, { stdio: 'pipe', });
 
     let y = false;
     sock.on("data", (data) => {
         if (data.toString().includes("Result") || y) {
             // append to "results.txt"
-            fs.appendFileSync("results2.txt", data.toString());
+            fs.appendFileSync("results.txt", data.toString());
 
             if (!y) {
                 setTimeout(() => sock.end(), 50);
                 engine.kill();
-                setTimeout(() => fs.appendFileSync("results2.txt", "\n"), 25);
+                setTimeout(() => fs.appendFileSync("results.txt", "\n"), 25);
 
                 if (lastEdit == fs.statSync(__filename).mtimeMs) {
                     console.log("playing again!\n");
