@@ -17,8 +17,14 @@
 #include <windows.h>
 #endif
 
-using namespace std::string_literals;
 using namespace std::chrono_literals;
+
+// using Coord = std::tuple<int, int>;
+struct Coord {
+    int row = -2, col = -2;
+    explicit operator bool() const { return row != -2; }
+    bool operator==(Coord const &) const = default;
+};
 
 struct piece {
     std::bitset<2> color;
@@ -52,7 +58,7 @@ struct move {
 
     bool attacking : 1 = true;
 
-    int fap[2]{-2, -2};
+    Coord fap{-2, -2};
 
     int eval = 0;
 };
@@ -383,7 +389,7 @@ struct board {
         return fen;
     };
 
-    std::vector<::move> possibleMoves(const std::vector<std::tuple<int, int>> &selectPieces = {{-2, -2}}, bool select = false) {
+    std::vector<::move> possibleMoves(const std::vector<Coord> &selectPieces = {{-2, -2}}, bool select = false) {
         std::vector<::move> movesm;
         std::vector<::move> moveso;
         int kingrow = -2;
@@ -393,9 +399,8 @@ struct board {
         for (int rownumb = 0; rownumb < 8; ++rownumb) {
             piece(&row)[8] = pieces[rownumb];
             for (int colnumb = 0; colnumb < 8; ++colnumb) {
-                if (select && !(count_if(selectPieces.begin(), selectPieces.end(), [&](const std::tuple<int, int> &t) {
-                        return get<0>(t) == rownumb && get<1>(t) == colnumb;
-                    })))
+                if (select && !(count(selectPieces.begin(), selectPieces.end(),
+                                      Coord{rownumb, colnumb})))
                     continue;
 
                 piece &piece = row[colnumb];
@@ -1115,7 +1120,7 @@ struct board {
 
         // legality check
         bool kingIsInCheck = false;
-        std::vector<std::tuple<int, int>> toselectPieces;
+        std::vector<Coord> toselectPieces;
         if (kingcol != -2) {
             for (::move &move : moveso) {
                 if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
@@ -1173,10 +1178,10 @@ struct board {
                     board boardc = *this;
                     boardc.move(move);
 
-                    std::vector<std::tuple<int, int>> fappers;
+                    std::vector<Coord> fappers;
                     for (::move &movea : moveso) {
-                        if (movea.fap[0] == move.fromrow && movea.fap[1] == move.fromcol) {
-                            fappers.push_back({static_cast<int>(movea.fromrow), static_cast<int>(movea.fromcol)});
+                        if (movea.fap == Coord{move.fromrow, move.fromcol}) {
+                            fappers.push_back({movea.fromrow, movea.fromcol});
                         }
                     }
                     // cout << fappers.size() << endl;
@@ -1378,8 +1383,8 @@ struct board {
                                : (move.castling
                                       ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" + piecesmap['R'])
                                       : "")))
-                << (move.fap[0] != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
-                << (move.attacking || move.fap[0] != -2
+                << (move.fap ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
+                << (move.attacking || move.fap
                         ? piecesmap[move.piece->color[1] ? (char)tolower(pieces[move.torow][move.tocol].piece)
                                                          : (char)toupper(pieces[move.torow][move.tocol].piece)]
                         : "")
@@ -1642,8 +1647,8 @@ int main(int argc, char *argv[]) {
         //                        : (move.castling
         //                               ? (move.piece->color[1] ? "\x1B[0m" + piecesmap['r'] : "\x1B[0m" +
         //                               piecesmap['R']) : "")))
-        //         << (move.fap[0] != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
-        //         << (move.attacking || move.fap[0] != -2
+        //         << (move.fap.row != -2 ? "\x1B[90m•" : (move.attacking ? "\x1B[37m•" : ""))
+        //         << (move.attacking || move.fap.row != -2
         //                 ? piecesmap[move.piece->color[1] ?
         //                 (char)tolower(board.pieces[move.torow][move.tocol].piece)
         //                                                  :
