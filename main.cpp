@@ -17,16 +17,17 @@
 #include <windows.h>
 #endif
 
-using namespace std;
+using namespace std::string_literals;
+using namespace std::chrono_literals;
 
 struct piece {
-    bitset<2> color;
+    std::bitset<2> color;
     char piece;
     int worth;
 };
 piece emptypiece = {0b00, ' ', 0};
 
-map<char, string> piecesmap = {
+std::map<char, std::string> piecesmap = {
     {'r', "♖"}, {'n', "♘"}, {'b', "♗"}, {'q', "♕"}, {'k', "♔"}, {'p', "♙"},
 
     {'R', "♜"}, {'N', "♞"}, {'B', "♝"}, {'Q', "♛"}, {'K', "♚"}, {'P', "♟"},
@@ -130,11 +131,11 @@ struct board {
 
     bool whoami = false;
 
-    bitset<4> castling{"1111"};
+    std::bitset<4> castling{"1111"};
 
     int enpassant[2]{-2, -2};
 
-    void move(string const &move) {
+    void move(std::string const &move) {
         ::move cmove;
 
         if (pieces[move[1] - '1'][move[0] - 'a'].piece == 'k' &&
@@ -283,17 +284,17 @@ struct board {
     }
 
     void actuallyMove(::move const &move) {
-        cout << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << (char)(move.tocol + 'a')
+        std::cout << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << (char)(move.tocol + 'a')
              << (char)(move.torow + '1');
 
         if (move.promotion != ' ') {
-            cout << (char)toupper(move.promotion);
+            std::cout << (char)toupper(move.promotion);
         }
 
         this->move(move);
         toggleWhoseToMove();
 
-        cout << endl;
+        std::cout << std::endl;
     }
 
     void toggleWhoseToMove() {
@@ -303,20 +304,20 @@ struct board {
     void draw() {
         // return;
 
-        cerr << "row\r\n↓";
+        std::cerr << "row\r\n↓";
         for (int i = 0; i < 9; i++) {
-            cerr << "\x1B[49m" << endl;
+            std::cerr << "\x1B[49m" << std::endl;
             if (i == 8) {
                 // cerr << "\x1B[49m  \uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17 ← col  " << endl;
-                cerr << "\x1B[49m  \uFF41\uFF42\uFF43\uFF44\uFF45\uFF46\uFF47\uFF48 ← col  " << endl;
+                std::cerr << "\x1B[49m  \uFF41\uFF42\uFF43\uFF44\uFF45\uFF46\uFF47\uFF48 ← col  " << std::endl;
             } else {
                 // string numbs[8] = {"\uFF10", "\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17"};
-                string numbs[8] = {"\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17", "\uFF18"};
-                cerr << "\x1B[49m" << numbs[7 - i];
+                std::string numbs[8] = {"\uFF11", "\uFF12", "\uFF13", "\uFF14", "\uFF15", "\uFF16", "\uFF17", "\uFF18"};
+                std::cerr << "\x1B[49m" << numbs[7 - i];
                 for (int k = 0; k < 8; ++k) {
                     piece &piece = pieces[7 - i][k];
-                    cerr << ((i % 2 ? !(k % 2) : (k % 2)) ? "\x1B[40m" : "\x1B[100m")                      // color
-                         << piecesmap[(char)(piece.color[1] ? piece.piece : toupper(piece.piece))] << " "; // piece
+                    std::cerr << ((i % 2 ? !(k % 2) : (k % 2)) ? "\x1B[40m" : "\x1B[100m")                      // color
+                              << piecesmap[(char)(piece.color[1] ? piece.piece : toupper(piece.piece))] << " "; // piece
                 }
             }
         }
@@ -328,7 +329,7 @@ struct board {
 
     // warning: highly inefficient function, it was more or less only meant for testing, don't even try to read it,
     // it'll definitely hurt your eyes
-    string toFen() {
+    std::string toFen() {
         char fen[90];
 
         struct {
@@ -340,7 +341,7 @@ struct board {
         for (int i = 0; i < 8; i++) {
             piece(&row)[8] = pieces[7 - i];
             for (piece &piece : row) {
-                cout << state.fenpos << " " << state.empty << endl;
+                std::cout << state.fenpos << " " << state.empty << std::endl;
                 if (piece.color[0] == 0) {
                     state.empty++;
                     continue;
@@ -382,9 +383,9 @@ struct board {
         return fen;
     };
 
-    vector<::move> possibleMoves(const vector<tuple<int, int>> &selectPieces = {{-2, -2}}, bool select = false) {
-        vector<::move> movesm;
-        vector<::move> moveso;
+    std::vector<::move> possibleMoves(const std::vector<std::tuple<int, int>> &selectPieces = {{-2, -2}}, bool select = false) {
+        std::vector<::move> movesm;
+        std::vector<::move> moveso;
         int kingrow = -2;
         int kingcol = -2;
 
@@ -392,7 +393,7 @@ struct board {
         for (int rownumb = 0; rownumb < 8; ++rownumb) {
             piece(&row)[8] = pieces[rownumb];
             for (int colnumb = 0; colnumb < 8; ++colnumb) {
-                if (select && !(count_if(selectPieces.begin(), selectPieces.end(), [&](const tuple<int, int> &t) {
+                if (select && !(count_if(selectPieces.begin(), selectPieces.end(), [&](const std::tuple<int, int> &t) {
                         return get<0>(t) == rownumb && get<1>(t) == colnumb;
                     })))
                     continue;
@@ -403,7 +404,7 @@ struct board {
                 if (piece.color[0] == 0)
                     continue;
 
-                vector<::move> &moves = (piece.color[1] != whosetomove) ? moveso : movesm;
+                std::vector<::move> &moves = (piece.color[1] != whosetomove) ? moveso : movesm;
                 bool imo = piece.color[1] != whosetomove;
                 // bool imo = false;
 
@@ -778,7 +779,7 @@ struct board {
                 }
                 case 'b': {
                     // left up
-                    for (int i = 1; i <= min(7 - rownumb, colnumb); i++) {
+                    for (int i = 1; i <= std::min(7 - rownumb, colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb + i][colnumb - i].color == 0b00) {
                                 moves.push_back(
@@ -811,7 +812,7 @@ struct board {
                     }
 
                     // left down
-                    for (int i = 1; i <= min(rownumb, colnumb); i++) {
+                    for (int i = 1; i <= std::min(rownumb, colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb - i][colnumb - i].color == 0b00) {
                                 moves.push_back(
@@ -844,7 +845,7 @@ struct board {
                     }
 
                     // right up
-                    for (int i = 1; i <= min(7 - rownumb, 7 - colnumb); i++) {
+                    for (int i = 1; i <= std::min(7 - rownumb, 7 - colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb + i][colnumb + i].color == 0b00) {
                                 moves.push_back(
@@ -877,7 +878,7 @@ struct board {
                     }
 
                     // right down
-                    for (int i = 1; i <= min(rownumb, 7 - colnumb); i++) {
+                    for (int i = 1; i <= std::min(rownumb, 7 - colnumb); i++) {
                         if (imo) {
                             if (pieces[rownumb - i][colnumb + i].color == 0b00) {
                                 moves.push_back(
@@ -992,7 +993,7 @@ struct board {
         if (select)
             return moveso;
 
-        vector<::move> &moves = movesm;
+        std::vector<::move> &moves = movesm;
         // castling
         if (whosetomove) {
             // black
@@ -1114,7 +1115,7 @@ struct board {
 
         // legality check
         bool kingIsInCheck = false;
-        vector<tuple<int, int>> toselectPieces;
+        std::vector<std::tuple<int, int>> toselectPieces;
         if (kingcol != -2) {
             for (::move &move : moveso) {
                 if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
@@ -1143,7 +1144,7 @@ struct board {
                     board boardc = *this;
                     boardc.move(move);
 
-                    vector<::move> possibleMoves = boardc.possibleMoves(toselectPieces, true);
+                    std::vector<::move> possibleMoves = boardc.possibleMoves(toselectPieces, true);
 
                     bool isIllegal = false;
                     // cout << possibleMoves.size() << endl;
@@ -1172,7 +1173,7 @@ struct board {
                     board boardc = *this;
                     boardc.move(move);
 
-                    vector<tuple<int, int>> fappers;
+                    std::vector<std::tuple<int, int>> fappers;
                     for (::move &movea : moveso) {
                         if (movea.fap[0] == move.fromrow && movea.fap[1] == move.fromcol) {
                             fappers.push_back({static_cast<int>(movea.fromrow), static_cast<int>(movea.fromcol)});
@@ -1180,7 +1181,7 @@ struct board {
                     }
                     // cout << fappers.size() << endl;
 
-                    vector<::move> possibleMoves = boardc.possibleMoves(fappers, true);
+                    std::vector<::move> possibleMoves = boardc.possibleMoves(fappers, true);
 
                     bool isIllegal = false;
                     // cout << possibleMoves.size() << endl << endl;
@@ -1273,14 +1274,14 @@ struct board {
         return moves;
     }
 
-    void loadfen(string fen) {
+    void loadfen(std::string fen) {
         // clear board
         for (piece(&row)[8] : pieces) {
             for (piece &piece : row) {
                 piece = emptypiece;
             }
         }
-        castling = bitset<4>{"0000"};
+        castling = std::bitset<4>{"0000"};
 
         int row = 7;
         int col = 0;
@@ -1362,16 +1363,16 @@ struct board {
         }
     }
 
-    void printMoveList(vector<::move> &moves) {
+    void printMoveList(std::vector<::move> &moves) {
         // return;
         for (::move &move : moves) {
             // board.printMove(move);
-            cerr
+            std::cerr
                 << piecesmap[move.piece->color[1] ? (char)tolower(move.piece->piece) : (char)toupper(move.piece->piece)]
                 << " " << (char)(move.fromcol + 'a') << (char)(move.fromrow + '1') << "→" << (char)(move.tocol + 'a')
                 << (char)(move.torow + '1') << "\x1B[0;32m"
-                << (string(1, move.promotion) != " "
-                        ? string(1, move.promotion)
+                << (std::string(1, move.promotion) != " "
+                        ? std::string(1, move.promotion)
                         : (move.enpassantrow != -2
                                ? "*"
                                : (move.castling
@@ -1384,7 +1385,7 @@ struct board {
                         : "")
                 << "\x1B[0m"
                 << "\x1B[2m\x1B[90m  \t   " /* << move.fromrow << move.fromcol << " " << move.torow << move.tocol */
-                << move.eval << "\x1B[0m\x1B[49m" << endl;
+                << move.eval << "\x1B[0m\x1B[49m" << std::endl;
         };
     }
 
@@ -1404,15 +1405,15 @@ struct board {
         return -1;
     };
 
-    struct move findMoveDepth(int depth, atomic<int> &counter, int x, int y) {
+    struct move findMoveDepth(int depth, std::atomic<int> &counter, int x, int y) {
         bool toplevel = counter == 0;
 
         // list moves
-        vector<::move> moves = possibleMoves();
+        std::vector<::move> moves = possibleMoves();
 
         // wait for all threads to finish
         if (toplevel) {
-            vector<jthread> tasks;
+            std::vector<std::jthread> tasks;
             tasks.reserve(moves.size());
             for (auto &move : moves) {
                 counter++;
@@ -1489,6 +1490,7 @@ struct board {
 
 int main(int argc, char *argv[]) {
     std::srand(std::time(nullptr));
+    auto constexpr now = std::chrono::steady_clock::now;
 
 #ifdef _WIN32
     SetConsoleOutputCP(65001);
@@ -1502,12 +1504,12 @@ int main(int argc, char *argv[]) {
     //     boardc.move("d1f2");
     //     boardc.toggleWhoseToMove();
 
-    //     atomic<int> counter = 0;
-    //     auto start = chrono::steady_clock::now();
+    //     std::atomic<int> counter = 0;
+    //     auto start = now();
 
     //     ::move bestMove = boardc.findMoveDepth(depth, counter, 0, 0);
     //     boardc.actuallyMove(bestMove);
-    //     cerr << counter / ((chrono::steady_clock::now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
+    //     cerr << counter / ((now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
     //          << "(" << counter << " total)" << endl;
 
     //     // boardc.draw();
@@ -1530,14 +1532,14 @@ int main(int argc, char *argv[]) {
     //     board.toggleWhoseToMove();
     // }
 
-    set<string_view> args{argv + 1, argv + argc};
+    std::set<std::string_view> args{argv + 1, argv + argc};
     int depth = 5;
 
     if (args.contains("--stupid")) {
-        cerr << "started in stupid mode" << endl;
+        std::cerr << "started in stupid mode" << std::endl;
         depth = 3;
     } else if (args.contains("--ultrastupid")) {
-        cerr << "started in ultrastupid mode" << endl;
+        std::cerr << "started in ultrastupid mode" << std::endl;
         depth = 2;
     }
 
@@ -1549,7 +1551,7 @@ int main(int argc, char *argv[]) {
         // // board.loadfen("r3k3/8/8/4q3/8/2r5/3K4/8 b q - 1 1");
 
         // atomic<int> counter = 0;
-        // auto start = chrono::steady_clock::now();
+        // auto start = now();
 
         // // board.move("c7c8Q");
         // // board.toggleWhoseToMove();
@@ -1557,7 +1559,7 @@ int main(int argc, char *argv[]) {
 
         // ::move bestMove = board.findMoveDepth(stupid ? 3 : 5, counter, 0, 0);
         // board.actuallyMove(bestMove);
-        // cerr << counter / ((chrono::steady_clock::now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
+        // cerr << counter / ((now() - start) / 1ms) / 1000.0 << "M positions per second" << endl
         //      << "(" << counter << " total)" << endl;
 
         // board.draw();
@@ -1568,11 +1570,11 @@ int main(int argc, char *argv[]) {
     }
 
     // let's for now just assume I'm white (hmm, that sounds kinda racist)
-    for (string input_move; true;) {
-        getline(cin, input_move);
+    for (std::string input_move; true;) {
+        getline(std::cin, input_move);
         // input_move = "e2e4";
         if (input_move.length() != 4 && input_move.length() != 5) {
-            cerr << "Invalid move: " << input_move << " of length " << input_move.length() << endl;
+            std::cerr << "Invalid move: " << input_move << " of length " << input_move.length() << std::endl;
             // exit(EXIT_FAILURE);
             continue;
         }
@@ -1656,13 +1658,13 @@ int main(int argc, char *argv[]) {
         // amout of possible moves
         // cerr << possibleMoves.size() << endl << endl;
 
-        atomic<int> counter = 0;
-        auto start = chrono::steady_clock::now();
+        std::atomic<int> counter = 0;
+        auto start = now();
 
         ::move bestMove = board.findMoveDepth(depth, counter, 0, 0);
         board.actuallyMove(bestMove);
-        cerr << counter / ((chrono::steady_clock::now() - start) / 1.0s) << "M positions per second" << endl
-             << "(" << counter << " total)" << endl;
+        std::cerr << counter / ((now() - start) / 1.0s) << "M positions per second" << std::endl
+                  << "(" << counter << " total)" << std::endl;
 
         board.draw();
 
