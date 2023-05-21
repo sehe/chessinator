@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <thread>
@@ -23,8 +24,9 @@ using namespace std::chrono_literals;
 struct Coord {
     int row = -2, col = -2;
     explicit operator bool() const { return row != -2; }
-    bool operator==(Coord const &) const = default;
+    auto operator<=>(Coord const &) const = default;
 };
+using Selection = std::set<Coord>;
 
 struct piece {
     std::bitset<2> color;
@@ -389,7 +391,7 @@ struct board {
         return fen;
     };
 
-    std::vector<::move> possibleMoves(const std::vector<Coord> &selectPieces = {{-2, -2}}, bool select = false) {
+    std::vector<::move> possibleMoves(std::optional<Selection> const& selectPieces = std::nullopt) {
         std::vector<::move> movesm;
         std::vector<::move> moveso;
         int kingrow = -2;
@@ -399,8 +401,7 @@ struct board {
         for (int rownumb = 0; rownumb < 8; ++rownumb) {
             piece(&row)[8] = pieces[rownumb];
             for (int colnumb = 0; colnumb < 8; ++colnumb) {
-                if (select && !(count(selectPieces.begin(), selectPieces.end(),
-                                      Coord{rownumb, colnumb})))
+                if (selectPieces && !selectPieces->contains({rownumb, colnumb}))
                     continue;
 
                 piece &piece = row[colnumb];
@@ -995,7 +996,7 @@ struct board {
                 }
             }
         }
-        if (select)
+        if (selectPieces)
             return moveso;
 
         std::vector<::move> &moves = movesm;
@@ -1120,11 +1121,11 @@ struct board {
 
         // legality check
         bool kingIsInCheck = false;
-        std::vector<Coord> toselectPieces;
+        Selection toselectPieces;
         if (kingcol != -2) {
             for (::move &move : moveso) {
                 if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
-                    toselectPieces.push_back({static_cast<int>(move.fromrow), static_cast<int>(move.fromcol)});
+                    toselectPieces.insert({move.fromrow, move.fromcol});
 
                     kingIsInCheck = true;
                     // break;
@@ -1149,7 +1150,7 @@ struct board {
                     board boardc = *this;
                     boardc.move(move);
 
-                    std::vector<::move> possibleMoves = boardc.possibleMoves(toselectPieces, true);
+                    std::vector<::move> possibleMoves = boardc.possibleMoves(toselectPieces);
 
                     bool isIllegal = false;
                     // cout << possibleMoves.size() << endl;
