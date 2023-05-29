@@ -522,7 +522,7 @@ struct board {
                         if (rownumb == 3 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
                             moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                              static_cast<unsigned int>(colnumb), static_cast<unsigned int>(2),
-                                             static_cast<unsigned int>(enpassant[0]), 3, enpassant[0]});
+                                             static_cast<unsigned int>(enpassant[0]), 2, enpassant[0]});
                         }
                     } else {
                         // white
@@ -630,7 +630,7 @@ struct board {
                         if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
                             moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                              static_cast<unsigned int>(colnumb), static_cast<unsigned int>(5),
-                                             static_cast<unsigned int>(enpassant[0]), 4, enpassant[0]});
+                                             static_cast<unsigned int>(enpassant[0]), 5, enpassant[0]});
                         }
                     }
                     break;
