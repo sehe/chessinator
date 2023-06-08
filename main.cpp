@@ -1,6 +1,9 @@
+#include <iomanip>
+#undef NDEBUG
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <cassert>
 #include <chrono>
 #include <cstdio>
 #include <iostream>
@@ -382,7 +385,8 @@ struct board {
         return fen;
     };
 
-    vector<::move> possibleMoves(const vector<tuple<int, int>> &selectPieces = {{-2, -2}}, bool select = false) {
+    vector<::move> possibleMoves(vector<tuple<int, int>> const& selectPieces = {{-2, -2}},
+                                 bool                           select       = false) {
         vector<::move> movesm;
         vector<::move> moveso;
         int kingrow = -2;
@@ -392,7 +396,8 @@ struct board {
         for (int rownumb = 0; rownumb < 8; ++rownumb) {
             piece(&row)[8] = pieces[rownumb];
             for (int colnumb = 0; colnumb < 8; ++colnumb) {
-                if (select && !(count_if(selectPieces.begin(), selectPieces.end(), [&](const tuple<int, int> &t) {
+                if (select &&
+                    !(count_if(selectPieces.begin(), selectPieces.end(), [&](tuple<int, int> const& t) {
                         return get<0>(t) == rownumb && get<1>(t) == colnumb;
                     })))
                     continue;
@@ -1490,8 +1495,8 @@ struct board {
         // sort moves by eval
         sort(
             moves.begin(), moves.end(),
-            whoami == whosetomove ? [](const ::move &a, const ::move &b) { return a.eval > b.eval; }
-                                  : [](const ::move &a, const ::move &b) { return a.eval < b.eval; });
+            whoami == whosetomove ? [](::move const& a, ::move const& b) { return a.eval > b.eval; }
+                                  : [](::move const& a, ::move const& b) { return a.eval < b.eval; });
 
         if (moves.size() == 0) {
             return {.eval = 696969};
@@ -1515,7 +1520,108 @@ struct board {
     }
 };
 
-int main(int argc, char *argv[]) {
+namespace sehe_tests {
+    using namespace std::chrono_literals;
+    static constexpr auto now = std::chrono::steady_clock::now;
+#define TIMED_CHECK(cond)                                                                                     \
+    do {                                                                                                     \
+        auto s  = now();                                                                                     \
+        bool ok = (cond);                                                                                    \
+        std::cerr << "Timed:" << std::setw(7) << (now() - s) / 1ms << "ms for " << #cond << "\t"             \
+                  << (ok ? "OK" : "FAIL") << std::endl;                                                      \
+    } while (0)
+
+    static size_t perft(board& b, unsigned depth) {
+        switch(depth--) {
+            case 0: return 1;
+            case 1: return b.possibleMoves().size();
+        }
+
+        size_t n = 0;
+        for (auto const& m : b.possibleMoves()) {
+            auto tmp = b;
+            tmp.move(m);
+            tmp.toggleWhoseToMove();
+            n += perft(tmp, depth);
+        }
+        return n;
+    }
+
+    static void testPerft() {
+        // reference values from https://www.chessprogramming.org/Perft_Results
+
+        if (1) {
+            board setup;
+            TIMED_CHECK(perft(setup, 0) == 1);
+            TIMED_CHECK(perft(setup, 1) == 20);
+            TIMED_CHECK(perft(setup, 2) == 400);
+            TIMED_CHECK(perft(setup, 3) == 8'902);
+            TIMED_CHECK(perft(setup, 4) == 197'281);
+            TIMED_CHECK(perft(setup, 5) == 4'865'609);
+            TIMED_CHECK(perft(setup, 6) == 119'060'324);
+            // TIMED_CHECK(perft(setup, 7) == 3'195'901'860); // unvalidated (michess)
+            // TIMED_CHECK(perft(setup, 8) == 84'998'978'956); // unvalidated (michess)
+            // TIMED_CHECK(perft(setup, 9) == 2'439'530'234'167); // unvalidated (michess)
+        }
+        if (1) {
+            board kiwiPete;
+            kiwiPete.loadfen({"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"});
+            TIMED_CHECK(perft(kiwiPete, 1) == 48);
+            TIMED_CHECK(perft(kiwiPete, 2) == 2039);
+            TIMED_CHECK(perft(kiwiPete, 3) == 97862);
+            TIMED_CHECK(perft(kiwiPete, 4) == 4085603);
+            TIMED_CHECK(perft(kiwiPete, 5) == 193690690);
+            // TIMED_CHECK(perft(kiwiPete, 6) == 8031647685);
+        }
+        if (1) {
+            board pos3;
+            pos3.loadfen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -");
+            TIMED_CHECK(perft(pos3, 1) == 14);
+            TIMED_CHECK(perft(pos3, 2) == 191);
+            TIMED_CHECK(perft(pos3, 3) == 2812);
+            TIMED_CHECK(perft(pos3, 4) == 43238);
+            TIMED_CHECK(perft(pos3, 5) == 674624);
+            TIMED_CHECK(perft(pos3, 6) == 11030083);
+            TIMED_CHECK(perft(pos3, 7) == 178633661);
+            // TIMED_CHECK(perft(pos3, 8) == 3009794393); // unvalidated (michess)
+        }
+        if (1) {
+            {
+                board pos4w;
+                pos4w.loadfen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
+                TIMED_CHECK(perft(pos4w, 1) == 6);
+                TIMED_CHECK(perft(pos4w, 2) == 264);
+                TIMED_CHECK(perft(pos4w, 3) == 9467);
+                TIMED_CHECK(perft(pos4w, 4) == 422333);
+                TIMED_CHECK(perft(pos4w, 5) == 15833292);
+                // TIMED_CHECK(perft(pos4w, 6) == 706045033); // sehe unvalidated (michess)
+            }
+            { // mirrored
+                board pos4b;
+                pos4b.loadfen("r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1");
+                TIMED_CHECK(perft(pos4b, 1) == 6);
+                TIMED_CHECK(perft(pos4b, 2) == 264);
+                TIMED_CHECK(perft(pos4b, 3) == 9467);
+                TIMED_CHECK(perft(pos4b, 4) == 422333);
+                TIMED_CHECK(perft(pos4b, 5) == 15833292);
+                // TIMED_CHECK(perft(pos4b, 6) == 706045033); // unvalidated (michess)
+            }
+        }
+        if (1) {
+            board pos5;
+            pos5.loadfen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
+            TIMED_CHECK(perft(pos5, 1) == 44);
+            TIMED_CHECK(perft(pos5, 2) == 1'486);
+            TIMED_CHECK(perft(pos5, 3) == 62'379);
+            TIMED_CHECK(perft(pos5, 4) == 2'103'487);
+            TIMED_CHECK(perft(pos5, 5) == 89'941'194);
+        }
+    }
+} // namespace sehe_tests
+
+int main(int argc, char* argv[]) {
+    sehe_tests::testPerft();
+    return 0;
     std::srand(std::time(nullptr));
 
 #ifdef _WIN32
