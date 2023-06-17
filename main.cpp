@@ -3,6 +3,7 @@
 #include <bitset>
 #include <chrono>
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -225,6 +226,19 @@ struct board {
                     castling[2] = 0;
                 }
             }
+        }
+        if (move.torow == 0 && move.tocol == 0) {
+            // left white rook
+            castling[1] = 0;
+        } else if (move.torow == 0 && move.tocol == 7) {
+            // right white rook
+            castling[0] = 0;
+        } else if (move.torow == 7 && move.tocol == 0) {
+            // left black rook
+            castling[3] = 0;
+        } else if (move.torow == 7 && move.tocol == 7) {
+            // right black rook
+            castling[2] = 0;
         }
 
         if (move.castling) {
@@ -1592,13 +1606,21 @@ int main(int argc, char *argv[]) {
         // exit(EXIT_SUCCESS);
     } else {
         board.actuallyMove({&board.pieces[1][4], 1, 4, 3, 4, -2, -2, ' ', false, false, {-2, -2}, 0});
+        // board.loadfen("rnb3nN/p1p1p3/1p1p1qQ1/1BP5/2N1p3/4B3/Pk3PPP/R3K2R b KQ - 1 17");
+
+        // board.move("b2a1");
+        // board.toggleWhoseToMove();
+
+        // board.move("c4b6");
+        // board.toggleWhoseToMove();
+
         board.draw();
     }
 
-    // let's for now just assume I'm white (hmm, that sounds kinda racist)
+    // let's for now just assume I'm white
     for (string input_move; true;) {
         getline(cin, input_move);
-        // input_move = "e2e4";
+        // input_move = "f6f4";
         if (input_move.length() != 4 && input_move.length() != 5) {
             cerr << "Invalid move: " << input_move << " of length " << input_move.length() << endl;
             // exit(EXIT_FAILURE);
@@ -1689,7 +1711,10 @@ int main(int argc, char *argv[]) {
 
         ::move bestMove = board.findMoveDepth(depth, counter, 0, 0);
         board.actuallyMove(bestMove);
-        cerr << counter / ((chrono::steady_clock::now() - start) / 1.0s) << "M positions per second" << endl
+
+        cerr << fixed << setprecision(1)
+             << (counter / 1000.0) / ((chrono::steady_clock::now() - start) / chrono::duration<double>(1.0))
+             << "M positions per second" << endl
              << "(" << counter << " total)" << endl;
 
         board.draw();

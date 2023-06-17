@@ -1,22 +1,5 @@
-fenloader: properly set worth
+illegal castling, but like, the rook didn't move
+well, you got out of check, but you also put yourself in check again
 
-for every possible move:
-    think of all other possible moves
-    for every possible move:
-        think of all other possible moves
-        for every possible move:
-            .......
-
-think of what's the worst that can happen, give a worse-ness score to all of them
-
-pick the move with the lowest worse-ness score
-
-
-
-list of moves
-think of opponent responses, choose the best for the opponent of them
-    for every of opponent responses, choose best response for me
-
-
-
-list of moves
+add caching (non-threaded)
+try to make caching threaded
