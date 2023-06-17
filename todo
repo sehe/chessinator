@@ -1,5 +1,15 @@
-illegal castling, but like, the rook didn't move
-well, you got out of check, but you also put yourself in check again
-
 add caching (non-threaded)
 try to make caching threaded
+
+
+position startpos moves f2f3
+go perft 4
+
+position startpos moves f2f3 e7e5
+go perft 3
+
+position startpos moves f2f3 e7e5 g2g4
+go perft 2
+
+position startpos moves f2f3 e7e5 g2g4 d8h4
+go perft 1
