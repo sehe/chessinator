@@ -641,9 +641,7 @@ struct board {
                         };
 
                         // en passant
-                        if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0]))
-                            ;
-                        {
+                        if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
                             moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                              static_cast<unsigned int>(colnumb), static_cast<unsigned int>(5),
                                              static_cast<unsigned int>(enpassant[0]), 5, enpassant[0]});
@@ -722,8 +720,7 @@ struct board {
                         }
 
                         if (piece.piece == 'k')
-                            ;
-                        break;
+                            break;
                     }
 
                     // up
