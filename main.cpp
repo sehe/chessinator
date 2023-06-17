@@ -641,7 +641,9 @@ struct board {
                         };
 
                         // en passant
-                        if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0])) {
+                        if (rownumb == 4 && ((colnumb - 1) == enpassant[0] || (colnumb + 1) == enpassant[0]))
+                            ;
+                        {
                             moves.push_back({&piece, static_cast<unsigned int>(rownumb),
                                              static_cast<unsigned int>(colnumb), static_cast<unsigned int>(5),
                                              static_cast<unsigned int>(enpassant[0]), 5, enpassant[0]});
@@ -669,7 +671,9 @@ struct board {
                                                  static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(i), .fap = {rownumb, i}});
 
-                                if (pieces[rownumb][i].piece != 'k')
+                                // if (!(pieces[rownumb][i].piece == 'k' && pieces[rownumb][i].color != piece.color))
+
+                                if (pieces[rownumb][i].piece != 'k' || pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -701,7 +705,7 @@ struct board {
                                                  static_cast<unsigned int>(colnumb), static_cast<unsigned int>(rownumb),
                                                  static_cast<unsigned int>(i), .fap = {rownumb, i}});
 
-                                if (pieces[rownumb][i].piece != 'k')
+                                if (pieces[rownumb][i].piece != 'k' || pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -718,7 +722,8 @@ struct board {
                         }
 
                         if (piece.piece == 'k')
-                            break;
+                            ;
+                        break;
                     }
 
                     // up
@@ -733,7 +738,7 @@ struct board {
                                                  static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
                                                  static_cast<unsigned int>(colnumb), .fap = {i, colnumb}});
 
-                                if (pieces[i][colnumb].piece != 'k')
+                                if (pieces[i][colnumb].piece != 'k' || pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -765,7 +770,7 @@ struct board {
                                                  static_cast<unsigned int>(colnumb), static_cast<unsigned int>(i),
                                                  static_cast<unsigned int>(colnumb), .fap = {i, colnumb}});
 
-                                if (pieces[i][colnumb].piece != 'k')
+                                if (pieces[i][colnumb].piece != 'k' || pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -804,7 +809,8 @@ struct board {
                                      static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb - i),
                                      .fap = {rownumb + i, colnumb - i}});
 
-                                if (pieces[rownumb + i][colnumb - i].piece != 'k')
+                                if (pieces[rownumb + i][colnumb - i].piece != 'k' ||
+                                    pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -837,7 +843,8 @@ struct board {
                                      static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb - i),
                                      .fap = {rownumb - i, colnumb - i}});
 
-                                if (pieces[rownumb - i][colnumb - i].piece != 'k')
+                                if (pieces[rownumb - i][colnumb - i].piece != 'k' ||
+                                    pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -870,7 +877,8 @@ struct board {
                                      static_cast<unsigned int>(rownumb + i), static_cast<unsigned int>(colnumb + i),
                                      .fap = {rownumb + i, colnumb + i}});
 
-                                if (pieces[rownumb + i][colnumb + i].piece != 'k')
+                                if (pieces[rownumb + i][colnumb + i].piece != 'k' ||
+                                    pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -903,7 +911,8 @@ struct board {
                                      static_cast<unsigned int>(rownumb - i), static_cast<unsigned int>(colnumb + i),
                                      .fap = {rownumb - i, colnumb + i}});
 
-                                if (pieces[rownumb - i][colnumb + i].piece != 'k')
+                                if (pieces[rownumb - i][colnumb + i].piece != 'k' ||
+                                    pieces[rownumb][i].color == piece.color)
                                     break;
                             }
                         } else {
@@ -1140,6 +1149,13 @@ struct board {
             }
         }
 
+        // for (::move &move : movesm) {
+        //     if (move.fromrow == 7 && move.fromcol == 2 && move.torow == 6 && move.tocol == 1) {
+        //         printMoveList(moveso);
+        //         cout << "kingIsInCheck: " << kingIsInCheck << endl << endl;
+        //     }
+        // }
+
         auto it = remove_if(moves.begin(), moves.end(), [&](::move &move) {
             if (kingIsInCheck) {
                 if (move.piece->piece == 'k') {
@@ -1159,6 +1175,14 @@ struct board {
 
                     vector<::move> possibleMoves = boardc.possibleMoves(toselectPieces, true);
 
+                    vector<tuple<int, int>> fappers;
+                    for (::move &movea : moveso) {
+                        if (movea.fap[0] == move.fromrow && movea.fap[1] == move.fromcol) {
+                            fappers.push_back({static_cast<int>(movea.fromrow), static_cast<int>(movea.fromcol)});
+                        }
+                    }
+                    vector<::move> possibleMoves2 = boardc.possibleMoves(fappers, true);
+
                     bool isIllegal = false;
                     // cout << possibleMoves.size() << endl;
                     for (::move &move : possibleMoves) {
@@ -1167,6 +1191,14 @@ struct board {
                             break;
                         }
                     };
+                    if (!isIllegal) {
+                        for (::move &move : possibleMoves2) {
+                            if (move.attacking && move.torow == kingrow && move.tocol == kingcol) {
+                                isIllegal = true;
+                                break;
+                            }
+                        };
+                    }
 
                     return isIllegal;
                 }
@@ -1606,15 +1638,24 @@ int main(int argc, char *argv[]) {
         // exit(EXIT_SUCCESS);
     } else {
         board.actuallyMove({&board.pieces[1][4], 1, 4, 3, 4, -2, -2, ' ', false, false, {-2, -2}, 0});
-        // board.loadfen("rnb3nN/p1p1p3/1p1p1qQ1/1BP5/2N1p3/4B3/Pk3PPP/R3K2R b KQ - 1 17");
-
-        // board.move("b2a1");
-        // board.toggleWhoseToMove();
-
-        // board.move("c4b6");
-        // board.toggleWhoseToMove();
-
+        // board.loadfen("8/1K6/8/8/8/8/8/2k4R b - - 4 39");
         board.draw();
+
+        // atomic<int> counter = 0;
+        // auto start = chrono::steady_clock::now();
+
+        // ::move bestMove = board.findMoveDepth(depth, counter, 0, 0);
+        // // ::move bestMove = board.possibleMoves()[0];
+        // board.actuallyMove(bestMove);
+
+        // cerr << fixed << setprecision(1)
+        //      << (counter / 1000.0) / ((chrono::steady_clock::now() - start) / chrono::duration<double>(1.0))
+        //      << "k positions per second" << endl
+        //      << "(" << counter << " total)" << endl;
+
+        // board.draw();
+
+        // exit(EXIT_SUCCESS);
     }
 
     // let's for now just assume I'm white
