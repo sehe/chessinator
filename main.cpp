@@ -1714,7 +1714,7 @@ int main(int argc, char *argv[]) {
 
         cerr << fixed << setprecision(1)
              << (counter / 1000.0) / ((chrono::steady_clock::now() - start) / chrono::duration<double>(1.0))
-             << "K positions per second" << endl
+             << "k positions per second" << endl
              << "(" << counter << " total)" << endl;
 
         board.draw();
